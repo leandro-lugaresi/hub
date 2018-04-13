@@ -44,6 +44,7 @@ Hub provides two types of subscribers:
 TODO: Add real examples
 
 ```go
+
 import github.com/leandro-lugaresi/hub
 
 h := hub.New()
@@ -51,33 +52,33 @@ h := hub.New()
 // Unbuffered subscribe
 subs1 := h.Subscribe("account.login.*", 0)
 go func(s *Subscription) {
-    for {
-				msg, ok := s.Next()
-				if !ok {
-					return
-        }
-        //process msg
-			}
+	for {
+		msg, ok := s.Next()
+		if !ok {
+			return
+		}
+		//process msg
+	}
 }(subs1)
 
 subs2 := h.NonBlockingSubscribe("account.login.*", 10)
 go func(s *Subscription) {
-    for {
-				msg, ok := s.Next()
-				if !ok {
-					return
-        }
-        //process msg
+	for {
+		msg, ok := s.Next()
+		if !ok {
+			return
+		}
+		//process msg
 			}
 }(subs2)
 
 h.Publish(hub.Message{
-        Name: "account.login.failed",
-        Fields: hub.Fields{
-            "account": 123,
-            "ip": '127.0.0.1',
-        },
-    })
+	Name: "account.login.failed",
+	Fields: hub.Fields{
+		"account": 123,
+		"ip": '127.0.0.1',
+	},
+})
 ```
 
 ---
