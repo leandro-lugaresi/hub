@@ -22,7 +22,7 @@
 
 ## Install
 
-This project uses simple go code and you can `go get` it but I encorage you to always vendor your dependencies or use one of the version tags of this project.
+This project uses simple go code and you can `go get` it but I encourage you to always vendor your dependencies or use one of the version tags of this project.
 
 ```sh
 go get -u github.com/leandro-lugaresi/hub
@@ -33,11 +33,53 @@ dep ensure --add github.com/leandro-lugaresi/hub
 
 ## Usage
 
-[TODO]
+Hub provides two types of subscribers:
+- `BlockingSubscriber` this subscriber use channels inside. If the channel is full the operation of publishing will block.
+    you can use a buffered (cap > `0`) or unbuffered channel (cap = `0`).
+- `NonBlockingSubscriber` this subscriber use a ring buffer. If the cap of the buffer is reached the publish operation will override the oldest data and never block.
+    This should be used only if loose data is acceptable. ie: metrics, logs
 
 ## Examples & Demos
 
-[TODO]
+TODO: Add real examples
+
+```go
+import github.com/leandro-lugaresi/hub
+
+h := hub.New()
+
+// Unbuffered subscribe
+subs1 := h.Subscribe("account.login.*", 0)
+go func(s *Subscription) {
+    for {
+				msg, ok := s.Next()
+				if !ok {
+					return
+        }
+        //process msg
+			}
+}(subs1)
+
+subs2 := h.NonBlockingSubscribe("account.login.*", 10)
+go func(s *Subscription) {
+    for {
+				msg, ok := s.Next()
+				if !ok {
+					return
+        }
+        //process msg
+			}
+}(subs2)
+
+h.Publish(hub.Message{
+        Name: "account.login.failed",
+        Fields: hub.Fields{
+            "account": 123,
+            "ip": '127.0.0.1',
+        },
+    })
+```
+
 ---
 
 This project adheres to the Contributor Covenant [code of conduct](CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code.
