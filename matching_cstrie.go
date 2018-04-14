@@ -193,41 +193,41 @@ func (c *csTrieMatcher) iinsert(i, parent *iNode, words []string, sub Subscriber
 	switch {
 	case main.cNode != nil:
 		cn := main.cNode
-		if br := cn.branches[words[0]]; br == nil {
+		br := cn.branches[words[0]]
+		if br == nil {
 			// If the relevant branch is not in the map, a copy of the C-node
 			// with the new entry is created. The linearization point is a
 			// successful CAS.
 			ncn := &mainNode{cNode: cn.inserted(words, sub)}
 			return atomic.CompareAndSwapPointer(
 				mainPtr, unsafe.Pointer(main), unsafe.Pointer(ncn))
-		} else {
-			// If the relevant key is present in the map, its corresponding
-			// branch is read.
-			if len(words) > 1 {
-				// If more than 1 word is present in the path, the tree must be
-				// traversed deeper.
-				if br.iNode != nil {
-					// If the branch has an I-node, iinsert is called
-					// recursively.
-					return c.iinsert(br.iNode, i, words[1:], sub)
-				}
-				// Otherwise, an I-node which points to a new C-node must be
-				// added. The linearization point is a successful CAS.
-				nin := &iNode{main: &mainNode{cNode: newCNode(words[1:], sub)}}
-				ncn := &mainNode{cNode: cn.updatedBranch(words[0], nin, br)}
-				return atomic.CompareAndSwapPointer(
-					mainPtr, unsafe.Pointer(main), unsafe.Pointer(ncn))
+		}
+		// If the relevant key is present in the map, its corresponding
+		// branch is read.
+		if len(words) > 1 {
+			// If more than 1 word is present in the path, the tree must be
+			// traversed deeper.
+			if br.iNode != nil {
+				// If the branch has an I-node, iinsert is called
+				// recursively.
+				return c.iinsert(br.iNode, i, words[1:], sub)
 			}
-			if _, ok := br.subs[sub]; ok {
-				// Already subscribed.
-				return true
-			}
-			// Insert the Subscriber by copying the C-node and updating the
-			// respective branch. The linearization point is a successful CAS.
-			ncn := &mainNode{cNode: cn.updated(words[0], sub)}
+			// Otherwise, an I-node which points to a new C-node must be
+			// added. The linearization point is a successful CAS.
+			nin := &iNode{main: &mainNode{cNode: newCNode(words[1:], sub)}}
+			ncn := &mainNode{cNode: cn.updatedBranch(words[0], nin, br)}
 			return atomic.CompareAndSwapPointer(
 				mainPtr, unsafe.Pointer(main), unsafe.Pointer(ncn))
 		}
+		if _, ok := br.subs[sub]; ok {
+			// Already subscribed.
+			return true
+		}
+		// Insert the Subscriber by copying the C-node and updating the
+		// respective branch. The linearization point is a successful CAS.
+		ncn := &mainNode{cNode: cn.updated(words[0], sub)}
+		return atomic.CompareAndSwapPointer(
+			mainPtr, unsafe.Pointer(main), unsafe.Pointer(ncn))
 	case main.tNode != nil:
 		clean(parent)
 		return false
@@ -257,47 +257,47 @@ func (c *csTrieMatcher) iremove(i, parent, parentsParent *iNode, words []string,
 	switch {
 	case main.cNode != nil:
 		cn := main.cNode
-		if br := cn.branches[words[wordIdx]]; br == nil {
+		br := cn.branches[words[wordIdx]]
+		if br == nil {
 			// If the relevant word is not in the map, the subscription doesn't
 			// exist.
 			return true
-		} else {
-			// If the relevant word is present in the map, its corresponding
-			// branch is read.
-			if wordIdx+1 < len(words) {
-				// If more than 1 word is present in the path, the tree must be
-				// traversed deeper.
-				if br.iNode != nil {
-					// If the branch has an I-node, iremove is called
-					// recursively.
-					return c.iremove(br.iNode, i, parent, words, wordIdx+1, sub)
-				}
-				// Otherwise, the subscription doesn't exist.
-				return true
-			}
-			if _, ok := br.subs[sub]; !ok {
-				// Not subscribed.
-				return true
-			}
-			// Remove the Subscriber by copying the C-node without it. A
-			// contraction of the copy is then created. A successful CAS will
-			// substitute the old C-node with the copied C-node, thus removing
-			// the Subscriber from the trie - this is the linearization point.
-			ncn := cn.removed(words[wordIdx], sub)
-			cntr := c.toContracted(ncn, i)
-			if atomic.CompareAndSwapPointer(
-				mainPtr, unsafe.Pointer(main), unsafe.Pointer(cntr)) {
-				if parent != nil {
-					mainPtr := (*unsafe.Pointer)(unsafe.Pointer(&i.main))
-					main := (*mainNode)(atomic.LoadPointer(mainPtr))
-					if main.tNode != nil {
-						cleanParent(i, parent, parentsParent, c, words[wordIdx-1])
-					}
-				}
-				return true
-			}
-			return false
 		}
+		// If the relevant word is present in the map, its corresponding
+		// branch is read.
+		if wordIdx+1 < len(words) {
+			// If more than 1 word is present in the path, the tree must be
+			// traversed deeper.
+			if br.iNode != nil {
+				// If the branch has an I-node, iremove is called
+				// recursively.
+				return c.iremove(br.iNode, i, parent, words, wordIdx+1, sub)
+			}
+			// Otherwise, the subscription doesn't exist.
+			return true
+		}
+		if _, ok := br.subs[sub]; !ok {
+			// Not subscribed.
+			return true
+		}
+		// Remove the Subscriber by copying the C-node without it. A
+		// contraction of the copy is then created. A successful CAS will
+		// substitute the old C-node with the copied C-node, thus removing
+		// the Subscriber from the trie - this is the linearization point.
+		ncn := cn.removed(words[wordIdx], sub)
+		cntr := c.toContracted(ncn, i)
+		if atomic.CompareAndSwapPointer(
+			mainPtr, unsafe.Pointer(main), unsafe.Pointer(cntr)) {
+			if parent != nil {
+				mainPtr := (*unsafe.Pointer)(unsafe.Pointer(&i.main))
+				main := (*mainNode)(atomic.LoadPointer(mainPtr))
+				if main.tNode != nil {
+					cleanParent(i, parent, parentsParent, c, words[wordIdx-1])
+				}
+			}
+			return true
+		}
+		return false
 	case main.tNode != nil:
 		clean(parent)
 		return false
@@ -374,21 +374,13 @@ func (c *csTrieMatcher) bLookup(i, parent *iNode, main *mainNode, b *branch,
 	if len(words) > 1 {
 		// If more than 1 key is present in the path, the tree must be
 		// traversed deeper.
-		var (
-			subscribers []Subscriber
-			ok          bool
-		)
 		if b.iNode == nil {
 			// If the branch doesn't point to an I-node, no subscribers
 			// exist.
-			subscribers = make([]Subscriber, 0)
-			ok = true
-		} else {
-			// If the branch has an I-node, ilookup is called recursively.
-			subscribers, ok = c.ilookup(b.iNode, i, words[1:])
+			return make([]Subscriber, 0), true
 		}
-
-		return subscribers, ok
+		// If the branch has an I-node, ilookup is called recursively.
+		return c.ilookup(b.iNode, i, words[1:])
 	}
 
 	// Retrieve the subscribers from the branch.
