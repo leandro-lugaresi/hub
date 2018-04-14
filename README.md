@@ -1,6 +1,6 @@
 # Hub
 
-:incoming_envelope: A fast(?) Event Hub using publish/subscribe pattern with support for topics like rabbitMQ exchanges for Go applications
+:incoming_envelope: A fast(?) Event Hub for go applications using publish/subscribe pattern with support for topics like rabbitMQ exchanges.
 
 [![Release](https://img.shields.io/github/release/leandro-lugaresi/hub.svg?style=flat-square)](https://github.com/leandro-lugaresi/hub/releases/latest)
 [![Software License](https://img.shields.io/github/license/leandro-lugaresi/hub.svg?style=flat-square)](LICENSE.md)
@@ -22,7 +22,7 @@
 
 ## Install
 
-This project uses simple go code and you can `go get` it but I encourage you to always vendor your dependencies or use one of the version tags of this project.
+To install this library you can `go get` it but I encourage you to always vendor your dependencies or use one of the version tags of this project.
 
 ```sh
 go get -u github.com/leandro-lugaresi/hub
@@ -33,11 +33,18 @@ dep ensure --add github.com/leandro-lugaresi/hub
 
 ## Usage
 
+### Subscribers
 Hub provides two types of subscribers:
 - `BlockingSubscriber` this subscriber use channels inside. If the channel is full the operation of publishing will block.
     you can use a buffered (cap > `0`) or unbuffered channel (cap = `0`).
 - `NonBlockingSubscriber` this subscriber use a ring buffer. If the cap of the buffer is reached the publish operation will override the oldest data and never block.
     This should be used only if loose data is acceptable. ie: metrics, logs
+
+### Topics
+
+This library uses the same concept of topic exchanges on rabbiMQ, so the message name is used to find all the subscribers that match, like a route.
+The topic must be a list of words delimited by dots (`.`) however, there is one important special case for binding keys:
+    `*` (star) can substitute for exactly one word.
 
 ## Examples & Demos
 
@@ -69,7 +76,7 @@ go func(s *Subscription) {
 			return
 		}
 		//process msg
-			}
+	}
 }(subs2)
 
 h.Publish(hub.Message{
