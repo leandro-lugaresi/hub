@@ -1,0 +1,34 @@
+# Compiled Object files, Static and Dynamic libs (Shared Objects)
+*.o
+*.a
+*.so
+*.exe
+*.dll
+*.prof
+debug
+
+
+# Folders
+_obj
+_test
+dist
+
+*.cgo1.go
+*.cgo2.c
+_cgo_defun.c
+_cgo_gotypes.go
+_cgo_export.*
+
+_testmain.go
+
+
+# Test binary, build with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+coverage.txt
+
+# ignored until version 1.0
+vendor
+
