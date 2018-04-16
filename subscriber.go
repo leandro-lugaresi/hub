@@ -22,6 +22,9 @@ type (
 // NewNonBlockingSubscriber returns a new NonBlockingSubscriber diode to be used
 // with many writers and a single reader.
 func NewNonBlockingSubscriber(cap int, alerter gendiodes.Alerter) Subscriber {
+	if cap <= 0 {
+		cap = 10
+	}
 	return &nonBlockingSubscriber{
 		d: gendiodes.NewPoller(
 			gendiodes.NewManyToOne(cap, alerter)),
@@ -35,13 +38,13 @@ func (d *nonBlockingSubscriber) Set(data Message) {
 
 // Next will return the next Event. If the
 // diode is empty this method will block until a Event is available to be
-// read or context is done. In case of context done we will return true on the second return param.
+// read or context is done. In case of context done we will return false on the second return param.
 func (d *nonBlockingSubscriber) Next() (Message, bool) {
 	data := d.d.Next()
 	if data == nil {
-		return Message{}, true
+		return Message{}, false
 	}
-	return *(*Message)(data), false
+	return *(*Message)(data), true
 }
 
 // NewBlockingSubscriber returns a new blocking subscriber using chanels imternally.
@@ -58,7 +61,7 @@ func (s *blockingSubscriber) Set(msg Message) {
 
 // Next will return the next Event. If the
 // diode is empty this method will block until a Event is available to be
-// read or context is done. In case of context done we will return true on the second return param.
+// read or context is done. In case of context done we will return false on the second return param.
 func (s *blockingSubscriber) Next() (Message, bool) {
 	msg, ok := <-s.ch
 	return msg, ok
