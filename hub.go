@@ -36,7 +36,7 @@ type (
 // New create and return a new empty hub.
 func New() *Hub {
 	return &Hub{
-		matcher: NewCSTrieMatcher(),
+		matcher: newCSTrieMatcher(),
 	}
 }
 

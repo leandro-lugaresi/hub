@@ -168,7 +168,7 @@ type csTrieMatcher struct {
 	root *iNode
 }
 
-func NewCSTrieMatcher() Matcher {
+func newCSTrieMatcher() Matcher {
 	root := &iNode{main: &mainNode{cNode: &cNode{}}}
 	return &csTrieMatcher{root: root}
 }
@@ -181,7 +181,7 @@ func (c *csTrieMatcher) Subscribe(topic string, sub Subscriber) (*Subscription, 
 		root    = (*iNode)(atomic.LoadPointer(rootPtr))
 	)
 	if !c.iinsert(root, nil, words, sub) {
-		c.Subscribe(topic, sub)
+		return c.Subscribe(topic, sub)
 	}
 	return &Subscription{Topic: topic, Subscriber: sub}, nil
 }

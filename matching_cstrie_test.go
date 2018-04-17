@@ -24,7 +24,7 @@ import (
 func TestCSTrieMatcher(t *testing.T) {
 	assert := assert.New(t)
 	var (
-		m  = NewCSTrieMatcher()
+		m  = newCSTrieMatcher()
 		s0 = discardSubscriber(0)
 		s1 = discardSubscriber(1)
 		s2 = discardSubscriber(2)
@@ -68,7 +68,7 @@ func TestCSTrieMatcher(t *testing.T) {
 
 func BenchmarkCSTrieMatcherSubscribe(b *testing.B) {
 	var (
-		m  = NewCSTrieMatcher()
+		m  = newCSTrieMatcher()
 		s0 = discardSubscriber(0)
 	)
 	populateMatcher(m, 1000, 5)
@@ -81,7 +81,7 @@ func BenchmarkCSTrieMatcherSubscribe(b *testing.B) {
 
 func BenchmarkCSTrieMatcherUnsubscribe(b *testing.B) {
 	var (
-		m  = NewCSTrieMatcher()
+		m  = newCSTrieMatcher()
 		s0 = discardSubscriber(0)
 	)
 	id, _ := m.Subscribe("foo.*.baz.qux.quux", s0)
@@ -95,7 +95,7 @@ func BenchmarkCSTrieMatcherUnsubscribe(b *testing.B) {
 
 func BenchmarkCSTrieMatcherLookup(b *testing.B) {
 	var (
-		m  = NewCSTrieMatcher()
+		m  = newCSTrieMatcher()
 		s0 = discardSubscriber(0)
 	)
 	m.Subscribe("foo.*.baz.qux.quux", s0)
@@ -109,7 +109,7 @@ func BenchmarkCSTrieMatcherLookup(b *testing.B) {
 
 func BenchmarkCSTrieMatcherSubscribeCold(b *testing.B) {
 	var (
-		m  = NewCSTrieMatcher()
+		m  = newCSTrieMatcher()
 		s0 = discardSubscriber(0)
 	)
 
@@ -121,7 +121,7 @@ func BenchmarkCSTrieMatcherSubscribeCold(b *testing.B) {
 
 func BenchmarkCSTrieMatcherUnsubscribeCold(b *testing.B) {
 	var (
-		m  = NewCSTrieMatcher()
+		m  = newCSTrieMatcher()
 		s0 = discardSubscriber(0)
 	)
 	id, _ := m.Subscribe("foo.*.baz.qux.quux", s0)
@@ -134,7 +134,7 @@ func BenchmarkCSTrieMatcherUnsubscribeCold(b *testing.B) {
 
 func BenchmarkCSTrieMatcherLookupCold(b *testing.B) {
 	var (
-		m  = NewCSTrieMatcher()
+		m  = newCSTrieMatcher()
 		s0 = discardSubscriber(0)
 	)
 	m.Subscribe("foo.*.baz.qux.quux", s0)
@@ -148,95 +148,71 @@ func BenchmarkCSTrieMatcherLookupCold(b *testing.B) {
 func BenchmarkMultithreaded1Thread5050CSTrie(b *testing.B) {
 	numItems := 1000
 	numThreads := 1
-	benchmark5050(b, numItems, numThreads, func(items [][]string) Matcher {
-		return NewCSTrieMatcher()
-	})
+	benchmarkMatcher(b, numItems, numThreads, newCSTrieMatcher(), percentual5050)
 }
 
 func BenchmarkMultithreaded2Thread5050CSTrie(b *testing.B) {
 	numItems := 1000
 	numThreads := 2
-	benchmark5050(b, numItems, numThreads, func(items [][]string) Matcher {
-		return NewCSTrieMatcher()
-	})
+	benchmarkMatcher(b, numItems, numThreads, newCSTrieMatcher(), percentual5050)
 }
 
 func BenchmarkMultithreaded4Thread5050CSTrie(b *testing.B) {
 	numItems := 1000
 	numThreads := 4
-	benchmark5050(b, numItems, numThreads, func(items [][]string) Matcher {
-		return NewCSTrieMatcher()
-	})
+	benchmarkMatcher(b, numItems, numThreads, newCSTrieMatcher(), percentual5050)
 }
 
 func BenchmarkMultithreaded8Thread5050CSTrie(b *testing.B) {
 	numItems := 1000
 	numThreads := 8
-	benchmark5050(b, numItems, numThreads, func(items [][]string) Matcher {
-		return NewCSTrieMatcher()
-	})
+	benchmarkMatcher(b, numItems, numThreads, newCSTrieMatcher(), percentual5050)
 }
 
 func BenchmarkMultithreaded12Thread5050CSTrie(b *testing.B) {
 	numItems := 1000
 	numThreads := 12
-	benchmark5050(b, numItems, numThreads, func(items [][]string) Matcher {
-		return NewCSTrieMatcher()
-	})
+	benchmarkMatcher(b, numItems, numThreads, newCSTrieMatcher(), percentual5050)
 }
 
 func BenchmarkMultithreaded16Thread5050CSTrie(b *testing.B) {
 	numItems := 1000
 	numThreads := 16
-	benchmark5050(b, numItems, numThreads, func(items [][]string) Matcher {
-		return NewCSTrieMatcher()
-	})
+	benchmarkMatcher(b, numItems, numThreads, newCSTrieMatcher(), percentual5050)
 }
 
 func BenchmarkMultithreaded1Thread9010CSTrie(b *testing.B) {
 	numItems := 1000
 	numThreads := 1
-	benchmark9010(b, numItems, numThreads, func(items [][]string) Matcher {
-		return NewCSTrieMatcher()
-	})
+	benchmarkMatcher(b, numItems, numThreads, newCSTrieMatcher(), percentual9010)
 }
 
 func BenchmarkMultithreaded2Thread9010CSTrie(b *testing.B) {
 	numItems := 1000
 	numThreads := 2
-	benchmark9010(b, numItems, numThreads, func(items [][]string) Matcher {
-		return NewCSTrieMatcher()
-	})
+	benchmarkMatcher(b, numItems, numThreads, newCSTrieMatcher(), percentual9010)
 }
 
 func BenchmarkMultithreaded4Thread9010CSTrie(b *testing.B) {
 	numItems := 1000
 	numThreads := 4
-	benchmark9010(b, numItems, numThreads, func(items [][]string) Matcher {
-		return NewCSTrieMatcher()
-	})
+	benchmarkMatcher(b, numItems, numThreads, newCSTrieMatcher(), percentual9010)
 }
 
 func BenchmarkMultithreaded8Thread9010CSTrie(b *testing.B) {
 	numItems := 1000
 	numThreads := 8
-	benchmark9010(b, numItems, numThreads, func(items [][]string) Matcher {
-		return NewCSTrieMatcher()
-	})
+	benchmarkMatcher(b, numItems, numThreads, newCSTrieMatcher(), percentual9010)
 }
 
 func BenchmarkMultithreaded12Thread9010CSTrie(b *testing.B) {
 	numItems := 1000
 	numThreads := 12
-	benchmark9010(b, numItems, numThreads, func(items [][]string) Matcher {
-		return NewCSTrieMatcher()
-	})
+	benchmarkMatcher(b, numItems, numThreads, newCSTrieMatcher(), percentual9010)
 }
 
 func BenchmarkMultithreaded16Thread9010CSTrie(b *testing.B) {
 	numItems := 1000
 	numThreads := 16
-	benchmark9010(b, numItems, numThreads, func(items [][]string) Matcher {
-		return NewCSTrieMatcher()
-	})
+	benchmarkMatcher(b, numItems, numThreads, newCSTrieMatcher(), percentual9010)
 }

@@ -18,7 +18,6 @@ package hub
 const (
 	delimiter = "."
 	wildcard  = "*"
-	empty     = ""
 )
 
 // Subscription represents a topic subscription.
