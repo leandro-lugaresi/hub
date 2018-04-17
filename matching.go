@@ -30,7 +30,7 @@ type Subscription struct {
 // Matcher contains topic subscriptions and performs matches on them.
 type Matcher interface {
 	// Subscribe adds the Subscriber to the topic and returns a Subscription.
-	Subscribe(topic string, sub Subscriber) (*Subscription, error)
+	Subscribe(topic string, sub Subscriber) *Subscription
 
 	// Unsubscribe removes the Subscription.
 	Unsubscribe(sub *Subscription)

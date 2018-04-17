@@ -11,11 +11,7 @@ func ExampleHub() {
 
 	// the cap param is used to create one buffered channel with cap = 10
 	// If you wan an unbuferred channel use the 0 cap
-	sub, err := h.Subscribe("account.*.failed", 10)
-	if err != nil {
-		println(err)
-		return
-	}
+	sub := h.Subscribe("account.*.failed", 10)
 	go func(s *hub.Subscription) {
 		for {
 			msg, ok := sub.Subscriber.Next()

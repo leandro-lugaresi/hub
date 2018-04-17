@@ -8,8 +8,7 @@ import (
 
 func TestSubscribe(t *testing.T) {
 	h := New()
-	subs1, err := h.Subscribe("a.*.c", 0)
-	require.NoError(t, err)
+	subs1 := h.Subscribe("a.*.c", 0)
 	processed := false
 	go processSubscription(subs1, func(msg Message) {
 		require.Equal(t, "a.b.c", msg.Name)
@@ -27,8 +26,7 @@ func TestSubscribe(t *testing.T) {
 
 func TestNonBlockingSubscribe(t *testing.T) {
 	h := New()
-	subs1, err := h.NonBlockingSubscribe("a.*.c", 10)
-	require.NoError(t, err)
+	subs1 := h.NonBlockingSubscribe("a.*.c", 10)
 	processed := false
 	go processSubscription(subs1, func(msg Message) {
 		require.Equal(t, "a.b.c", msg.Name)

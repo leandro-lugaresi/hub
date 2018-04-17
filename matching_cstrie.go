@@ -174,7 +174,7 @@ func newCSTrieMatcher() Matcher {
 }
 
 // Subscribe adds the Subscriber to the topic and returns a Subscription.
-func (c *csTrieMatcher) Subscribe(topic string, sub Subscriber) (*Subscription, error) {
+func (c *csTrieMatcher) Subscribe(topic string, sub Subscriber) *Subscription {
 	var (
 		words   = strings.Split(topic, delimiter)
 		rootPtr = (*unsafe.Pointer)(unsafe.Pointer(&c.root))
@@ -183,7 +183,7 @@ func (c *csTrieMatcher) Subscribe(topic string, sub Subscriber) (*Subscription, 
 	if !c.iinsert(root, nil, words, sub) {
 		return c.Subscribe(topic, sub)
 	}
-	return &Subscription{Topic: topic, Subscriber: sub}, nil
+	return &Subscription{Topic: topic, Subscriber: sub}
 }
 
 func (c *csTrieMatcher) iinsert(i, parent *iNode, words []string, sub Subscriber) bool {
