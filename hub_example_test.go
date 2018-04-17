@@ -2,8 +2,9 @@ package hub_test
 
 import (
 	"fmt"
-	"github.com/leandro-lugaresi/hub"
 	"time"
+
+	"github.com/leandro-lugaresi/hub"
 )
 
 func ExampleHub() {

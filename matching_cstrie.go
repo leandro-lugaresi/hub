@@ -289,8 +289,8 @@ func (c *csTrieMatcher) iremove(i, parent, parentsParent *iNode, words []string,
 		if atomic.CompareAndSwapPointer(
 			mainPtr, unsafe.Pointer(main), unsafe.Pointer(cntr)) {
 			if parent != nil {
-				mainPtr := (*unsafe.Pointer)(unsafe.Pointer(&i.main))
-				main := (*mainNode)(atomic.LoadPointer(mainPtr))
+				mainPtr = (*unsafe.Pointer)(unsafe.Pointer(&i.main))
+				main = (*mainNode)(atomic.LoadPointer(mainPtr))
 				if main.tNode != nil {
 					cleanParent(i, parent, parentsParent, c, words[wordIdx-1])
 				}
