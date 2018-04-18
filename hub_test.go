@@ -3,12 +3,14 @@ package hub
 import (
 	"sync"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestProcessSubscribers(t *testing.T) {
 	tests := []struct {
-		name   string
-		cap   int
+		name     string
+		cap      int
 		blocking bool
 	}{
 		{name: "blocking and unbuffered", cap: 0, blocking: true},
@@ -37,6 +39,24 @@ func TestProcessSubscribers(t *testing.T) {
 			wg.Wait()
 		})
 	}
+}
+
+func TestNonBlockingSubscriberShouldAlertIfLoseMessages(t *testing.T) {
+	h := New()
+	subs := h.NonBlockingSubscribe("a.*.c", 10)
+	subsAlert := h.Subscribe(AlertTopic, 1)
+	// send messages without a working subscriber
+	for i := 0; i < 100; i++ {
+		h.Publish(Message{Name: "a.c.c", Fields: Fields{"i": i}})
+	}
+	msg, ok := subs.Subscriber.Next()
+	require.True(t, ok)
+	// next message will be the last published - cap
+	require.Equal(t, 90, msg.Int("i"))
+	msg, ok = subsAlert.Subscriber.Next()
+	require.True(t, ok)
+	require.Equal(t, 90, msg.Int("missed"))
+	require.Equal(t, "a.*.c", msg.String("topic"))
 }
 
 func processSubscription(s *Subscription, op func(msg Message)) {
