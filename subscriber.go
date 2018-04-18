@@ -47,6 +47,9 @@ func (d *nonBlockingSubscriber) Next() (Message, bool) {
 
 // NewBlockingSubscriber returns a new blocking subscriber using chanels imternally.
 func NewBlockingSubscriber(cap int) Subscriber {
+	if cap < 0 {
+		cap = 0
+	}
 	return &blockingSubscriber{
 		ch: make(chan Message, cap),
 	}

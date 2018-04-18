@@ -1,46 +1,42 @@
 package hub
 
 import (
+	"sync"
 	"testing"
-	"time"
-
-	"github.com/stretchr/testify/require"
 )
 
-func TestSubscribe(t *testing.T) {
-	h := New()
-	subs1 := h.Subscribe("a.*.c", 0)
-	processed := false
-	go processSubscription(subs1, func(msg Message) {
-		require.Equal(t, "a.b.c", msg.Name)
-		require.Equal(t, []byte(`{"foo": "baz"}`), msg.Msg)
-		processed = true
-	})
-	h.Publish(Message{
-		Msg:  []byte(`{"foo": "baz"}`),
-		Name: "a.b.c",
-	})
-	time.Sleep(time.Millisecond)
-	require.True(t, processed, "subscription function should be executed")
-
-}
-
-func TestNonBlockingSubscribe(t *testing.T) {
-	h := New()
-	subs1 := h.NonBlockingSubscribe("a.*.c", 10)
-	processed := false
-	go processSubscription(subs1, func(msg Message) {
-		require.Equal(t, "a.b.c", msg.Name)
-		require.Equal(t, []byte(`{"foo": "baz"}`), msg.Msg)
-		processed = true
-	})
-	h.Publish(Message{
-		Msg:  []byte(`{"foo": "baz"}`),
-		Name: "a.b.c",
-	})
-	time.Sleep(30 * time.Millisecond)
-	require.True(t, processed, "subscription function should be executed")
-
+func TestProcessSubscribers(t *testing.T) {
+	tests := []struct {
+		name   string
+		cap   int
+		blocking bool
+	}{
+		{name: "blocking and unbuffered", cap: 0, blocking: true},
+		{name: "blocking and buffered", cap: 10, blocking: true},
+		{name: "blocking and negative buffer", cap: -10, blocking: true},
+		{name: "nonBlocking and unbuffered", cap: 0, blocking: false},
+		{name: "nonBlocking and buffered", cap: 10, blocking: false},
+		{name: "nonBlocking and negative buffer", cap: -10, blocking: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			h := New()
+			var subs *Subscription
+			if tt.blocking {
+				subs = h.Subscribe("a.*.c", tt.cap)
+			} else {
+				subs = h.NonBlockingSubscribe("a.*.c", tt.cap)
+			}
+			var wg sync.WaitGroup
+			wg.Add(2)
+			go processSubscription(subs, func(msg Message) {
+				wg.Done()
+			})
+			h.Publish(Message{Name: "a.b.c"})
+			h.Publish(Message{Name: "a.c.c"})
+			wg.Wait()
+		})
+	}
 }
 
 func processSubscription(s *Subscription, op func(msg Message)) {

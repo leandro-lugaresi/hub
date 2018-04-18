@@ -4,6 +4,8 @@ import (
 	diodes "code.cloudfoundry.org/go-diodes"
 )
 
+const AlertTopic = "hub.subscription.messageslost"
+
 type (
 	//Hub is a component that provides publish and subscribe capabilities for messages.
 	// Every message has a Name used to route them to subscribers and this can be used like RabbitMQ topics exchanges.
@@ -81,7 +83,7 @@ func (*Hub) Close() error {
 
 func (h *Hub) alert(missed int, topic string) {
 	h.Publish(Message{
-		Name: "hub.subscription.messageslost",
+		Name: AlertTopic,
 		Fields: Fields{
 			"missed": missed,
 			"topic":  topic,
