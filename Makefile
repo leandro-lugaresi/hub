@@ -7,6 +7,7 @@ setup: ## Install all the build and lint dependencies
 	go get -u github.com/pierrre/gotestcover
 	go get -u golang.org/x/tools/cmd/cover
 	go get -u code.cloudfoundry.org/go-diodes
+	go get -u github.com/stretchr/testify/require
 	gometalinter --install --update
 
 test: ## Run all the tests
