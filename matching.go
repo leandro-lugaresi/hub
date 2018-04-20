@@ -20,21 +20,32 @@ const (
 	wildcard  = "*"
 )
 
-// Subscription represents a topic subscription.
-type Subscription struct {
-	id         uint32
-	Topic      string
-	Subscriber Subscriber
-}
+type (
+	// Subscription represents a topic subscription.
+	Subscription struct {
+		Topic      string
+		Receiver   <-chan Message
+		subscriber subscriber
+	}
 
-// Matcher contains topic subscriptions and performs matches on them.
-type Matcher interface {
+	// subscriber is the interface used internally to send values and get the channel used by subscribers.
+	// This is used to override the behaviour of channel and support nonBlocking operations
+	subscriber interface {
+		// Set send the given Event to be processed by the subscriber
+		Set(Message)
+		// Ch return the channel used to consume messages inside the subscription
+		Ch() <-chan Message
+	}
+)
+
+// matcher contains topic subscriptions and performs matches on them.
+type matcher interface {
 	// Subscribe adds the Subscriber to the topic and returns a Subscription.
-	Subscribe(topic string, sub Subscriber) *Subscription
+	Subscribe(topic string, sub subscriber) *Subscription
 
 	// Unsubscribe removes the Subscription.
 	Unsubscribe(sub *Subscription)
 
-	// Lookup returns the SubscrMultithreaded4Threadibers for the given topic.
-	Lookup(topic string) []Subscriber
+	// Lookup returns the subscribers for the given topic.
+	Lookup(topic string) []subscriber
 }

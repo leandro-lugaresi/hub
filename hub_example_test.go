@@ -14,11 +14,7 @@ func ExampleHub() {
 	// If you wan an unbuferred channel use the 0 cap
 	sub := h.Subscribe("account.*.failed", 10)
 	go func(s *hub.Subscription) {
-		for {
-			msg, ok := sub.Subscriber.Next()
-			if !ok {
-				break
-			}
+		for msg := range s.Receiver {
 			fmt.Printf("receive msg with topic %s and id %d\n", msg.Name, msg.Int("id"))
 		}
 	}(sub)

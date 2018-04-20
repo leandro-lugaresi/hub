@@ -26,10 +26,10 @@ import (
 
 type discardSubscriber int
 
-func (d discardSubscriber) Set(msg Message)       {}
-func (d discardSubscriber) Next() (Message, bool) { return Message{}, false }
+func (d discardSubscriber) Set(msg Message)    {}
+func (d discardSubscriber) Ch() <-chan Message { return make(chan Message) }
 
-func benchmarkMatcher(b *testing.B, numItems, numThreads int, m Matcher, doSubs func(n int) bool) {
+func benchmarkMatcher(b *testing.B, numItems, numThreads int, m matcher, doSubs func(n int) bool) {
 	itemsToInsert := generateTopics(numThreads, numItems)
 
 	var wg sync.WaitGroup
@@ -63,7 +63,7 @@ func percentual9010(n int) bool {
 	return n%10 == 0
 }
 
-func assertEqual(assert *assert.Assertions, expected, actual []Subscriber) {
+func assertEqual(assert *assert.Assertions, expected, actual []subscriber) {
 	assert.Len(actual, len(expected))
 	for _, sub := range expected {
 		assert.Contains(actual, sub)
@@ -83,7 +83,7 @@ func generateTopics(numThreads, numItems int) [][]string {
 	return itemsToInsert
 }
 
-func populateMatcher(m Matcher, num, topicSize int) {
+func populateMatcher(m matcher, num, topicSize int) {
 	for i := 0; i < num; i++ {
 		prefix := ""
 		topic := ""
