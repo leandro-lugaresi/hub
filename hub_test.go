@@ -42,19 +42,15 @@ func TestProcessSubscribers(t *testing.T) {
 }
 
 func TestNonBlockingSubscriberShouldAlertIfLoseMessages(t *testing.T) {
-	t.Skip()
 	h := New()
-	subs := h.NonBlockingSubscribe("a.*.c", 10)
+	h.NonBlockingSubscribe("a.*.c", 10)
 	subsAlert := h.Subscribe(AlertTopic, 1)
 	// send messages without a working subscriber
-	for i := 0; i < 100; i++ {
+	for i := 0; i < 11; i++ {
 		h.Publish(Message{Name: "a.c.c", Fields: Fields{"i": i}})
 	}
-	msg := <-subs.Receiver
-	// next message will be the last published - cap
-	require.Equal(t, 90, msg.Int("i"))
-	msg = <-subsAlert.Receiver
-	require.Equal(t, 90, msg.Int("missed"))
+	msg := <-subsAlert.Receiver
+	require.Equal(t, 1, msg.Int("missed"))
 	require.Equal(t, "a.*.c", msg.String("topic"))
 }
 
