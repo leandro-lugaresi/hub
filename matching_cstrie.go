@@ -35,35 +35,35 @@ type cNode struct {
 }
 
 // newCNode creates a new C-node with the given subscription path.
-func newCNode(words []string, sub Subscriber) *cNode {
+func newCNode(words []string, sub subscriber) *cNode {
 	if len(words) == 1 {
 		return &cNode{
 			branches: map[string]*branch{
-				words[0]: {subs: map[Subscriber]struct{}{sub: {}}},
+				words[0]: {subs: map[subscriber]struct{}{sub: {}}},
 			},
 		}
 	}
 	nin := &iNode{main: &mainNode{cNode: newCNode(words[1:], sub)}}
 	return &cNode{
 		branches: map[string]*branch{
-			words[0]: {subs: map[Subscriber]struct{}{}, iNode: nin},
+			words[0]: {subs: map[subscriber]struct{}{}, iNode: nin},
 		},
 	}
 }
 
-// inserted returns a copy of this C-node with the specified Subscriber
+// inserted returns a copy of this C-node with the specified subscriber
 // inserted.
-func (c *cNode) inserted(words []string, sub Subscriber) *cNode {
+func (c *cNode) inserted(words []string, sub subscriber) *cNode {
 	branches := make(map[string]*branch, len(c.branches)+1)
 	for key, branch := range c.branches {
 		branches[key] = branch
 	}
 	var br *branch
 	if len(words) == 1 {
-		br = &branch{subs: map[Subscriber]struct{}{sub: {}}}
+		br = &branch{subs: map[subscriber]struct{}{sub: {}}}
 	} else {
 		br = &branch{
-			subs:  make(map[Subscriber]struct{}),
+			subs:  make(map[subscriber]struct{}),
 			iNode: &iNode{main: &mainNode{cNode: newCNode(words[1:], sub)}},
 		}
 	}
@@ -72,12 +72,12 @@ func (c *cNode) inserted(words []string, sub Subscriber) *cNode {
 }
 
 // updated returns a copy of this C-node with the specified branch updated.
-func (c *cNode) updated(word string, sub Subscriber) *cNode {
+func (c *cNode) updated(word string, sub subscriber) *cNode {
 	branches := make(map[string]*branch, len(c.branches))
 	for word, branch := range c.branches {
 		branches[word] = branch
 	}
-	newBranch := &branch{subs: map[Subscriber]struct{}{sub: {}}}
+	newBranch := &branch{subs: map[subscriber]struct{}{sub: {}}}
 	br, ok := branches[word]
 	if ok {
 		for id, sub := range br.subs {
@@ -100,9 +100,9 @@ func (c *cNode) updatedBranch(word string, in *iNode, br *branch) *cNode {
 	return &cNode{branches: branches}
 }
 
-// removed returns a copy of this C-node with the Subscriber removed from the
+// removed returns a copy of this C-node with the subscriber removed from the
 // corresponding branch.
-func (c *cNode) removed(word string, sub Subscriber) *cNode {
+func (c *cNode) removed(word string, sub subscriber) *cNode {
 	branches := make(map[string]*branch, len(c.branches))
 	for word, branch := range c.branches {
 		branches[word] = branch
@@ -129,21 +129,21 @@ func (c *cNode) getBranches(word string) (*branch, *branch) {
 
 type branch struct {
 	iNode *iNode
-	subs  map[Subscriber]struct{}
+	subs  map[subscriber]struct{}
 }
 
 // updated returns a copy of this branch updated with the given I-node.
 func (b *branch) updated(in *iNode) *branch {
-	subs := make(map[Subscriber]struct{}, len(b.subs))
+	subs := make(map[subscriber]struct{}, len(b.subs))
 	for id, sub := range b.subs {
 		subs[id] = sub
 	}
 	return &branch{subs: subs, iNode: in}
 }
 
-// removed returns a copy of this branch with the given Subscriber removed.
-func (b *branch) removed(sub Subscriber) *branch {
-	subs := make(map[Subscriber]struct{}, len(b.subs))
+// removed returns a copy of this branch with the given subscriber removed.
+func (b *branch) removed(sub subscriber) *branch {
+	subs := make(map[subscriber]struct{}, len(b.subs))
 	for id, sub := range b.subs {
 		subs[id] = sub
 	}
@@ -152,8 +152,8 @@ func (b *branch) removed(sub Subscriber) *branch {
 }
 
 // subscribers returns the Subscribers for this branch.
-func (b *branch) subscribers() []Subscriber {
-	subs := make([]Subscriber, len(b.subs))
+func (b *branch) subscribers() []subscriber {
+	subs := make([]subscriber, len(b.subs))
 	i := 0
 	for sub := range b.subs {
 		subs[i] = sub
@@ -168,13 +168,13 @@ type csTrieMatcher struct {
 	root *iNode
 }
 
-func newCSTrieMatcher() Matcher {
+func newCSTrieMatcher() matcher {
 	root := &iNode{main: &mainNode{cNode: &cNode{}}}
 	return &csTrieMatcher{root: root}
 }
 
-// Subscribe adds the Subscriber to the topic and returns a Subscription.
-func (c *csTrieMatcher) Subscribe(topic string, sub Subscriber) *Subscription {
+// Subscribe adds the subscriber to the topic and returns a Subscription.
+func (c *csTrieMatcher) Subscribe(topic string, sub subscriber) *Subscription {
 	var (
 		words   = strings.Split(topic, delimiter)
 		rootPtr = (*unsafe.Pointer)(unsafe.Pointer(&c.root))
@@ -183,10 +183,10 @@ func (c *csTrieMatcher) Subscribe(topic string, sub Subscriber) *Subscription {
 	if !c.iinsert(root, nil, words, sub) {
 		return c.Subscribe(topic, sub)
 	}
-	return &Subscription{Topic: topic, Subscriber: sub}
+	return &Subscription{Topic: topic, Receiver: sub.Ch(), subscriber: sub}
 }
 
-func (c *csTrieMatcher) iinsert(i, parent *iNode, words []string, sub Subscriber) bool {
+func (c *csTrieMatcher) iinsert(i, parent *iNode, words []string, sub subscriber) bool {
 	// Linearization point.
 	mainPtr := (*unsafe.Pointer)(unsafe.Pointer(&i.main))
 	main := (*mainNode)(atomic.LoadPointer(mainPtr))
@@ -223,7 +223,7 @@ func (c *csTrieMatcher) iinsert(i, parent *iNode, words []string, sub Subscriber
 			// Already subscribed.
 			return true
 		}
-		// Insert the Subscriber by copying the C-node and updating the
+		// Insert the subscriber by copying the C-node and updating the
 		// respective branch. The linearization point is a successful CAS.
 		ncn := &mainNode{cNode: cn.updated(words[0], sub)}
 		return atomic.CompareAndSwapPointer(
@@ -243,13 +243,13 @@ func (c *csTrieMatcher) Unsubscribe(sub *Subscription) {
 		rootPtr = (*unsafe.Pointer)(unsafe.Pointer(&c.root))
 		root    = (*iNode)(atomic.LoadPointer(rootPtr))
 	)
-	if !c.iremove(root, nil, nil, words, 0, sub.Subscriber) {
+	if !c.iremove(root, nil, nil, words, 0, sub.subscriber) {
 		c.Unsubscribe(sub)
 	}
 }
 
 func (c *csTrieMatcher) iremove(i, parent, parentsParent *iNode, words []string,
-	wordIdx int, sub Subscriber) bool {
+	wordIdx int, sub subscriber) bool {
 
 	// Linearization point.
 	mainPtr := (*unsafe.Pointer)(unsafe.Pointer(&i.main))
@@ -280,10 +280,10 @@ func (c *csTrieMatcher) iremove(i, parent, parentsParent *iNode, words []string,
 			// Not subscribed.
 			return true
 		}
-		// Remove the Subscriber by copying the C-node without it. A
+		// Remove the subscriber by copying the C-node without it. A
 		// contraction of the copy is then created. A successful CAS will
 		// substitute the old C-node with the copied C-node, thus removing
-		// the Subscriber from the trie - this is the linearization point.
+		// the subscriber from the trie - this is the linearization point.
 		ncn := cn.removed(words[wordIdx], sub)
 		cntr := c.toContracted(ncn, i)
 		if atomic.CompareAndSwapPointer(
@@ -307,7 +307,7 @@ func (c *csTrieMatcher) iremove(i, parent, parentsParent *iNode, words []string,
 }
 
 // Lookup returns the Subscribers for the given topic.
-func (c *csTrieMatcher) Lookup(topic string) []Subscriber {
+func (c *csTrieMatcher) Lookup(topic string) []subscriber {
 	var (
 		words   = strings.Split(topic, delimiter)
 		rootPtr = (*unsafe.Pointer)(unsafe.Pointer(&c.root))
@@ -323,7 +323,7 @@ func (c *csTrieMatcher) Lookup(topic string) []Subscriber {
 // ilookup attempts to retrieve the Subscribers for the word path. True is
 // returned if the Subscribers were retrieved, false if the operation needs to
 // be retried.
-func (c *csTrieMatcher) ilookup(i, parent *iNode, words []string) ([]Subscriber, bool) {
+func (c *csTrieMatcher) ilookup(i, parent *iNode, words []string) ([]subscriber, bool) {
 	// Linearization point.
 	mainPtr := (*unsafe.Pointer)(unsafe.Pointer(&i.main))
 	main := (*mainNode)(atomic.LoadPointer(mainPtr))
@@ -331,7 +331,7 @@ func (c *csTrieMatcher) ilookup(i, parent *iNode, words []string) ([]Subscriber,
 	case main.cNode != nil:
 		// Traverse exact-match branch and single-word-wildcard branch.
 		exact, singleWC := main.cNode.getBranches(words[0])
-		subs := make(map[Subscriber]struct{})
+		subs := make(map[subscriber]struct{})
 		if exact != nil {
 			s, ok := c.bLookup(i, parent, main, exact, words)
 			if !ok {
@@ -350,7 +350,7 @@ func (c *csTrieMatcher) ilookup(i, parent *iNode, words []string) ([]Subscriber,
 				subs[sub] = struct{}{}
 			}
 		}
-		s := make([]Subscriber, len(subs))
+		s := make([]subscriber, len(subs))
 		i := 0
 		for sub := range subs {
 			s[i] = sub
@@ -369,7 +369,7 @@ func (c *csTrieMatcher) ilookup(i, parent *iNode, words []string) ([]Subscriber,
 // given branch. True is returned if the Subscribers were retrieved, false if
 // the operation needs to be retried.
 func (c *csTrieMatcher) bLookup(i, parent *iNode, main *mainNode, b *branch,
-	words []string) ([]Subscriber, bool) {
+	words []string) ([]subscriber, bool) {
 
 	if len(words) > 1 {
 		// If more than 1 key is present in the path, the tree must be
@@ -377,7 +377,7 @@ func (c *csTrieMatcher) bLookup(i, parent *iNode, main *mainNode, b *branch,
 		if b.iNode == nil {
 			// If the branch doesn't point to an I-node, no subscribers
 			// exist.
-			return make([]Subscriber, 0), true
+			return make([]subscriber, 0), true
 		}
 		// If the branch has an I-node, ilookup is called recursively.
 		return c.ilookup(b.iNode, i, words[1:])

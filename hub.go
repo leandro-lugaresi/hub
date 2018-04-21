@@ -1,9 +1,5 @@
 package hub
 
-import (
-	diodes "code.cloudfoundry.org/go-diodes"
-)
-
 const AlertTopic = "hub.subscription.messageslost"
 
 type (
@@ -11,27 +7,7 @@ type (
 	// Every message has a Name used to route them to subscribers and this can be used like RabbitMQ topics exchanges.
 	// Where every word is separated by dots `.` and you can use `*` as a wildcard.
 	Hub struct {
-		matcher Matcher
-	}
-
-	// publisher is the interface used internally to send values to the Receiver
-	publisher interface {
-		// Set send the given Event to be processed by the subscriber
-		Set(Message)
-	}
-
-	// Receiver is the interface used to get Messages from hub.
-	Receiver interface {
-		// Next will return the next Event to be processed.
-		// This method will block until an Event is available or context is done.
-		// In case of context done we will return true on the second return param.
-		Next() (Message, bool)
-	}
-
-	// Subscriber is the interface used to get Messages from Hub.
-	Subscriber interface {
-		Receiver
-		publisher
+		matcher matcher
 	}
 )
 
@@ -45,8 +21,7 @@ func New() *Hub {
 // Publish will send an event to all the subscribers matching the event name.
 func (h *Hub) Publish(m Message) {
 	for _, sub := range h.matcher.Lookup(m.Topic()) {
-		s := sub.(publisher)
-		s.Set(m)
+		sub.Set(m)
 	}
 }
 
@@ -54,7 +29,7 @@ func (h *Hub) Publish(m Message) {
 // The cap param is used inside the subscriber and in this case used to create a channel.
 // cap(1) = unbuffered channel.
 func (h *Hub) Subscribe(topic string, cap int) *Subscription {
-	return h.matcher.Subscribe(topic, NewBlockingSubscriber(cap))
+	return h.matcher.Subscribe(topic, newBlockingSubscriber(cap))
 }
 
 // NonBlockingSubscribe create a nonblocking subscription to receive events for a given topic.
@@ -62,9 +37,9 @@ func (h *Hub) Subscribe(topic string, cap int) *Subscription {
 func (h *Hub) NonBlockingSubscribe(topic string, cap int) *Subscription {
 	return h.matcher.Subscribe(
 		topic,
-		NewNonBlockingSubscriber(
+		newNonBlockingSubscriber(
 			cap,
-			diodes.AlertFunc(func(missed int) {
+			AlertFunc(func(missed int) {
 				h.alert(missed, topic)
 			}),
 		))

@@ -38,11 +38,11 @@ func TestCSTrieMatcher(t *testing.T) {
 	sub5 := m.Subscribe("trade", s1)
 	sub6 := m.Subscribe("*", s2)
 
-	assertEqual(assert, []Subscriber{s0, s1}, m.Lookup("forex.eur"))
-	assertEqual(assert, []Subscriber{s2}, m.Lookup("forex"))
-	assertEqual(assert, []Subscriber{}, m.Lookup("trade.jpy"))
-	assertEqual(assert, []Subscriber{s0, s1}, m.Lookup("forex.jpy"))
-	assertEqual(assert, []Subscriber{s1, s2}, m.Lookup("trade"))
+	assertEqual(assert, []subscriber{s0, s1}, m.Lookup("forex.eur"))
+	assertEqual(assert, []subscriber{s2}, m.Lookup("forex"))
+	assertEqual(assert, []subscriber{}, m.Lookup("trade.jpy"))
+	assertEqual(assert, []subscriber{s0, s1}, m.Lookup("forex.jpy"))
+	assertEqual(assert, []subscriber{s1, s2}, m.Lookup("trade"))
 
 	m.Unsubscribe(sub0)
 	m.Unsubscribe(sub1)
@@ -52,11 +52,11 @@ func TestCSTrieMatcher(t *testing.T) {
 	m.Unsubscribe(sub5)
 	m.Unsubscribe(sub6)
 
-	assertEqual(assert, []Subscriber{}, m.Lookup("forex.eur"))
-	assertEqual(assert, []Subscriber{}, m.Lookup("forex"))
-	assertEqual(assert, []Subscriber{}, m.Lookup("trade.jpy"))
-	assertEqual(assert, []Subscriber{}, m.Lookup("forex.jpy"))
-	assertEqual(assert, []Subscriber{}, m.Lookup("trade"))
+	assertEqual(assert, []subscriber{}, m.Lookup("forex.eur"))
+	assertEqual(assert, []subscriber{}, m.Lookup("forex"))
+	assertEqual(assert, []subscriber{}, m.Lookup("trade.jpy"))
+	assertEqual(assert, []subscriber{}, m.Lookup("forex.jpy"))
+	assertEqual(assert, []subscriber{}, m.Lookup("trade"))
 }
 
 func BenchmarkCSTrieMatcherSubscribe(b *testing.B) {

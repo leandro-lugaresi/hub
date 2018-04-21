@@ -1,6 +1,6 @@
 # Hub
 
-:incoming_envelope: A fast(?) Event Hub for go applications using publish/subscribe pattern with support for topics like rabbitMQ exchanges.
+:incoming_envelope: A fast enough Event Hub for go applications using publish/subscribe with support patterns on topics like rabbitMQ exchanges.
 
 [![Release](https://img.shields.io/github/release/leandro-lugaresi/hub.svg?style=flat-square)](https://github.com/leandro-lugaresi/hub/releases/latest)
 [![Software License](https://img.shields.io/github/license/leandro-lugaresi/hub.svg?style=flat-square)](LICENSE.md)
@@ -34,58 +34,63 @@ dep ensure --add github.com/leandro-lugaresi/hub
 ## Usage
 
 ### Subscribers
-Hub provides two types of subscribers:
-- `BlockingSubscriber` this subscriber use channels inside. If the channel is full the operation of publishing will block.
-    you can use a buffered (cap > `0`) or unbuffered channel (cap = `0`).
-- `NonBlockingSubscriber` this subscriber use a ring buffer. If the cap of the buffer is reached the publish operation will override the oldest data and never block.
-    This should be used only if loose data is acceptable. ie: metrics, logs
+
+Hub provides subscribers as buffered (cap > `0`) and unbuffered (cap = 0) channels but we have two different types of subscribers:
+
+- `Subscriber` this is the default subscriber and it's a blocking subscriber so if the channel is full and you try to send another message the send operation will block until the subscriber consumes some message.
+- `NonBlockingSubscriber` this subscriber will never block on the publish side but if the capacity of the channel is reached the publish operation will be lost and an alert will be trigged.
+  This should be used only if loose data is acceptable. ie: metrics, logs
 
 ### Topics
 
-This library uses the same concept of topic exchanges on rabbiMQ, so the message name is used to find all the subscribers that match, like a route.
+This library uses the same concept of topic exchanges on rabbiMQ, so the message name is used to find all the subscribers that match the topic, like a route.
 The topic must be a list of words delimited by dots (`.`) however, there is one important special case for binding keys:
     `*` (star) can substitute for exactly one word.
 
 ## Examples & Demos
 
-TODO: Add real examples
-
 ```go
+package main
 
-import github.com/leandro-lugaresi/hub
+import (
+	"fmt"
+	"time"
 
-h := hub.New()
+	"github.com/leandro-lugaresi/hub"
+)
+func main() {
+	h := hub.New()
 
-// Unbuffered subscribe
-subs1 := h.Subscribe("account.login.*", 0)
-go func(s *Subscription) {
-	for {
-		msg, ok := s.Next()
-		if !ok {
-			return
-		}
-		//process msg
-	}
-}(subs1)
+		// the cap param is used to create one buffered channel with cap = 10
+		// If you wan an unbuferred channel use the 0 cap
+		sub := h.Subscribe("account.*.failed", 10)
+		go func(s *hub.Subscription) {
+			for msg := range s.Receiver {
+				fmt.Printf("receive msg with topic %s and id %d\n", msg.Name, msg.Int("id"))
+			}
+		}(sub)
 
-subs2 := h.NonBlockingSubscribe("account.login.*", 10)
-go func(s *Subscription) {
-	for {
-		msg, ok := s.Next()
-		if !ok {
-			return
-		}
-		//process msg
-	}
-}(subs2)
+		h.Publish(hub.Message{
+			Name:   "account.login.failed",
+			Fields: hub.Fields{"id": 123},
+		})
 
-h.Publish(hub.Message{
-	Name: "account.login.failed",
-	Fields: hub.Fields{
-		"account": 123,
-		"ip": '127.0.0.1',
-	},
-})
+		h.Publish(hub.Message{
+			Name:   "account.changepassword.failed",
+			Fields: hub.Fields{"id": 456},
+		})
+
+		h.Publish(hub.Message{
+			Name:   "account.foo.failed",
+			Fields: hub.Fields{"id": 789},
+		})
+		// TODO: remove sleep when the close method is implemented
+		time.Sleep(time.Second)
+		// Output:
+		// receive msg with topic account.login.failed and id 123
+		// receive msg with topic account.changepassword.failed and id 456
+		// receive msg with topic account.foo.failed and id 789
+}
 ```
 
 ---

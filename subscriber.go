@@ -1,69 +1,57 @@
 package hub
 
-import (
-	gendiodes "code.cloudfoundry.org/go-diodes"
-)
-
 type (
-	// nonBlockingSubscriber uses an diode and is optiomal for many writes and a single reader
-	// This subscriber is used when need high throughput and losing data is acceptable.
-	nonBlockingSubscriber struct {
-		d *gendiodes.Poller
-	}
+	AlertFunc func(missed int)
 
-	// blockingSubscriber uses an channel to receive events.
-	blockingSubscriber struct {
-		ch chan Message
+	nonBlockingSubscriber struct {
+		ch    chan Message
+		alert AlertFunc
 	}
+	// blockingSubscriber uses an channel to receive events.
+	blockingSubscriber chan Message
 )
 
-// NewNonBlockingSubscriber returns a new NonBlockingSubscriber diode to be used
-// with many writers and a single reader.
-func NewNonBlockingSubscriber(cap int, alerter gendiodes.Alerter) Subscriber {
+// newNonBlockingSubscriber returns a new nonBlockingSubscriber
+// this subscriber will never block when sending an message, if the capacity is full
+// we will ignore the message and call the Alert function from the Alerter.
+func newNonBlockingSubscriber(cap int, alerter AlertFunc) *nonBlockingSubscriber {
 	if cap <= 0 {
 		cap = 10
 	}
 	return &nonBlockingSubscriber{
-		d: gendiodes.NewPoller(
-			gendiodes.NewManyToOne(cap, alerter)),
+		ch:    make(chan Message, cap),
+		alert: alerter,
 	}
 }
 
 // Set inserts the given Event into the diode.
-func (d *nonBlockingSubscriber) Set(data Message) {
-	d.d.Set(gendiodes.GenericDataType(&data))
-}
-
-// Next will return the next Event. If the
-// diode is empty this method will block until a Event is available to be
-// read or context is done. In case of context done we will return false on the second return param.
-func (d *nonBlockingSubscriber) Next() (Message, bool) {
-	data := d.d.Next()
-	if data == nil {
-		return Message{}, false
+func (s *nonBlockingSubscriber) Set(msg Message) {
+	select {
+	case s.ch <- msg:
+	default:
+		s.alert(1)
 	}
-	return *(*Message)(data), true
 }
 
-// NewBlockingSubscriber returns a new blocking subscriber using chanels imternally.
-func NewBlockingSubscriber(cap int) Subscriber {
+// Ch return the channel used by subscriptions to consume messages
+func (s *nonBlockingSubscriber) Ch() <-chan Message {
+	return s.ch
+}
+
+// newBlockingSubscriber returns a blocking subscriber using chanels imternally.
+func newBlockingSubscriber(cap int) subscriber {
 	if cap < 0 {
 		cap = 0
 	}
-	return &blockingSubscriber{
-		ch: make(chan Message, cap),
-	}
+	return make(blockingSubscriber, cap)
 }
 
-// Set inserts the given Event into the diode.
-func (s *blockingSubscriber) Set(msg Message) {
-	s.ch <- msg
+// Set will send the message using the channel
+func (ch blockingSubscriber) Set(msg Message) {
+	ch <- msg
 }
 
-// Next will return the next Event. If the
-// diode is empty this method will block until a Event is available to be
-// read or context is done. In case of context done we will return false on the second return param.
-func (s *blockingSubscriber) Next() (Message, bool) {
-	msg, ok := <-s.ch
-	return msg, ok
+// Ch return the channel used by subscriptions to consume messages
+func (ch blockingSubscriber) Ch() <-chan Message {
+	return ch
 }
