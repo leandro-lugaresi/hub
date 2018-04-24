@@ -12,6 +12,9 @@ setup: ## Install all the build and lint dependencies
 test: ## Run all the tests
 	gotestcover $(TEST_OPTIONS) -covermode=atomic -coverprofile=coverage.txt $(SOURCE_FILES) -run $(TEST_PATTERN) -timeout=1m
 
+throughput: ## Run the throughput tests
+	go test -v -timeout 60s github.com/leandro-lugaresi/hub -run ^TestThroughput -args -throughput
+
 bench: ## Run the benchmark tests
 	go test -bench=. $(TEST_PATTERN)
 
