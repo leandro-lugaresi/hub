@@ -15,7 +15,7 @@ func ExampleHub() {
 	sub := h.Subscribe("account.*.failed", 10)
 	go func(s *hub.Subscription) {
 		for msg := range s.Receiver {
-			fmt.Printf("receive msg with topic %s and id %d\n", msg.Name, msg.Int("id"))
+			fmt.Printf("receive msg with topic %s and id %d\n", msg.Name, msg.Fields["id"])
 		}
 	}(sub)
 

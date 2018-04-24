@@ -50,8 +50,8 @@ func TestNonBlockingSubscriberShouldAlertIfLoseMessages(t *testing.T) {
 		h.Publish(Message{Name: "a.c.c", Fields: Fields{"i": i}})
 	}
 	msg := <-subsAlert.Receiver
-	require.Equal(t, 1, msg.Int("missed"))
-	require.Equal(t, "a.*.c", msg.String("topic"))
+	require.Equal(t, 1, msg.Fields["missed"])
+	require.Equal(t, "a.*.c", msg.Fields["topic"])
 }
 
 func processSubscription(s *Subscription, op func(msg Message)) {
