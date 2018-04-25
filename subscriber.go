@@ -33,7 +33,7 @@ func (s *nonBlockingSubscriber) Set(msg Message) {
 	}
 }
 
-// Ch return the channel used by subscriptions to consume messages
+// Ch return the channel used by subscriptions to consume messages.
 func (s *nonBlockingSubscriber) Ch() <-chan Message {
 	return s.ch
 }

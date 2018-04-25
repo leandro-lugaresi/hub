@@ -51,7 +51,7 @@ func TestThroughput(t *testing.T) {
 	}
 	for _, topic := range topics {
 		sub := h.NonBlockingSubscribe(topic, 200)
-		go func(s *Subscription) {
+		go func(s Subscription) {
 			for range s.Receiver {
 
 			}

@@ -28,13 +28,13 @@ func (h *Hub) Publish(m Message) {
 // Subscribe create a blocking subscription to receive events for a given topic.
 // The cap param is used inside the subscriber and in this case used to create a channel.
 // cap(1) = unbuffered channel.
-func (h *Hub) Subscribe(topic string, cap int) *Subscription {
+func (h *Hub) Subscribe(topic string, cap int) Subscription {
 	return h.matcher.Subscribe(topic, newBlockingSubscriber(cap))
 }
 
 // NonBlockingSubscribe create a nonblocking subscription to receive events for a given topic.
 // This implementation use internally a ring buffer so if the buffer reaches the max capability the subscribe will override old messages.
-func (h *Hub) NonBlockingSubscribe(topic string, cap int) *Subscription {
+func (h *Hub) NonBlockingSubscribe(topic string, cap int) Subscription {
 	return h.matcher.Subscribe(
 		topic,
 		newNonBlockingSubscriber(
@@ -46,7 +46,7 @@ func (h *Hub) NonBlockingSubscribe(topic string, cap int) *Subscription {
 }
 
 // Unsubscribe remove and close the Subscription.
-func (h *Hub) Unsubscribe(sub *Subscription) {
+func (h *Hub) Unsubscribe(sub Subscription) {
 	h.matcher.Unsubscribe(sub)
 }
 

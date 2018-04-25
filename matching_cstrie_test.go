@@ -37,6 +37,7 @@ func TestCSTrieMatcher(t *testing.T) {
 	sub4 := m.Subscribe("forex.*", s1)
 	sub5 := m.Subscribe("trade", s1)
 	sub6 := m.Subscribe("*", s2)
+	assert.Len(m.Subscriptions(), 7)
 
 	assertEqual(assert, []subscriber{s0, s1}, m.Lookup("forex.eur"))
 	assertEqual(assert, []subscriber{s2}, m.Lookup("forex"))

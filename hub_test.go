@@ -23,7 +23,7 @@ func TestProcessSubscribers(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			h := New()
-			var subs *Subscription
+			var subs Subscription
 			if tt.blocking {
 				subs = h.Subscribe("a.*.c", tt.cap)
 			} else {
@@ -54,7 +54,7 @@ func TestNonBlockingSubscriberShouldAlertIfLoseMessages(t *testing.T) {
 	require.Equal(t, "a.*.c", msg.Fields["topic"])
 }
 
-func processSubscription(s *Subscription, op func(msg Message)) {
+func processSubscription(s Subscription, op func(msg Message)) {
 	for msg := range s.Receiver {
 		op(msg)
 	}
