@@ -50,10 +50,15 @@ func (h *Hub) Unsubscribe(sub Subscription) {
 	h.matcher.Unsubscribe(sub)
 }
 
-// Close will remove and unsubcribe all the subscriptions.
-// TODO: Implement to close every subscriber nicelly.
-func (*Hub) Close() error {
-	return nil
+// Close will unsubscribe all the subscriptions and close them all.
+func (h *Hub) Close() {
+	subs := h.matcher.Subscriptions()
+	for _, s := range subs {
+		h.matcher.Unsubscribe(s)
+	}
+	for _, s := range subs {
+		s.subscriber.Close()
+	}
 }
 
 func (h *Hub) alert(missed int, topic string) {

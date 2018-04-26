@@ -395,7 +395,7 @@ func (c *csTrieMatcher) Subscriptions() []Subscription {
 	)
 	result, ok := c.isubscriptions(root, nil, []string{})
 	if !ok {
-		c.Subscriptions()
+		return c.Subscriptions()
 	}
 	return result
 }

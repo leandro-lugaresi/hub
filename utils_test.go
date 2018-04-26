@@ -28,6 +28,7 @@ type discardSubscriber int
 
 func (d discardSubscriber) Set(msg Message)    {}
 func (d discardSubscriber) Ch() <-chan Message { return make(chan Message) }
+func (d discardSubscriber) Close()             {}
 
 func benchmarkMatcher(b *testing.B, numItems, numThreads int, m matcher, doSubs func(n int) bool) {
 	itemsToInsert := generateTopics(numThreads, numItems)

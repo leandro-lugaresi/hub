@@ -36,6 +36,10 @@ type (
 		// Ch return the channel used to consume messages inside the subscription.
 		// This func MUST always return the same channel.
 		Ch() <-chan Message
+		// Close will close the internal state and the subscriber will not receive more messages
+		// WARN: This function can be executed more than one time so the code MUST take care of this situation and
+		// avoid problems like close a closed channel.
+		Close()
 	}
 )
 
