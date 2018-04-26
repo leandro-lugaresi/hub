@@ -49,17 +49,17 @@ func TestThroughput(t *testing.T) {
 	if !*throughputTest {
 		t.Skip("throughputTests skipped")
 	}
+	var wg sync.WaitGroup
 	for _, topic := range topics {
-		sub := h.NonBlockingSubscribe(topic, 200)
-		go func(s *Subscription) {
+		sub := h.Subscribe(topic, 200)
+		go func(s Subscription) {
 			for range s.Receiver {
-
 			}
+			wg.Done()
 		}(sub)
 	}
 
 	before := time.Now()
-	var wg sync.WaitGroup
 	wg.Add(numPublishers)
 	for i := 0; i < numPublishers; i++ {
 		go func() {
@@ -69,6 +69,9 @@ func TestThroughput(t *testing.T) {
 			wg.Done()
 		}()
 	}
+	wg.Wait()
+	wg.Add(numSubs)
+	h.Close()
 	wg.Wait()
 	dur := time.Since(before)
 	throughput := numMsgs * numPublishers / dur.Seconds()

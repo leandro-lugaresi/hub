@@ -174,7 +174,7 @@ func newCSTrieMatcher() matcher {
 }
 
 // Subscribe adds the subscriber to the topic and returns a Subscription.
-func (c *csTrieMatcher) Subscribe(topic string, sub subscriber) *Subscription {
+func (c *csTrieMatcher) Subscribe(topic string, sub subscriber) Subscription {
 	var (
 		words   = strings.Split(topic, delimiter)
 		rootPtr = (*unsafe.Pointer)(unsafe.Pointer(&c.root))
@@ -183,7 +183,7 @@ func (c *csTrieMatcher) Subscribe(topic string, sub subscriber) *Subscription {
 	if !c.iinsert(root, nil, words, sub) {
 		return c.Subscribe(topic, sub)
 	}
-	return &Subscription{Topic: topic, Receiver: sub.Ch(), subscriber: sub}
+	return Subscription{Topic: topic, Receiver: sub.Ch(), subscriber: sub}
 }
 
 func (c *csTrieMatcher) iinsert(i, parent *iNode, words []string, sub subscriber) bool {
@@ -237,7 +237,7 @@ func (c *csTrieMatcher) iinsert(i, parent *iNode, words []string, sub subscriber
 }
 
 // Unsubscribe removes the Subscription.
-func (c *csTrieMatcher) Unsubscribe(sub *Subscription) {
+func (c *csTrieMatcher) Unsubscribe(sub Subscription) {
 	var (
 		words   = strings.Split(sub.Topic, delimiter)
 		rootPtr = (*unsafe.Pointer)(unsafe.Pointer(&c.root))
@@ -385,6 +385,56 @@ func (c *csTrieMatcher) bLookup(i, parent *iNode, main *mainNode, b *branch,
 
 	// Retrieve the subscribers from the branch.
 	return b.subscribers(), true
+}
+
+// Subscriptions return all the subscriptions inside the cstrie
+func (c *csTrieMatcher) Subscriptions() []Subscription {
+	var (
+		rootPtr = (*unsafe.Pointer)(unsafe.Pointer(&c.root))
+		root    = (*iNode)(atomic.LoadPointer(rootPtr))
+	)
+	result, ok := c.isubscriptions(root, nil, []string{})
+	if !ok {
+		return c.Subscriptions()
+	}
+	return result
+}
+
+func (c *csTrieMatcher) isubscriptions(i, parent *iNode, words []string) ([]Subscription, bool) {
+	// Linearization point.
+	mainPtr := (*unsafe.Pointer)(unsafe.Pointer(&i.main))
+	main := (*mainNode)(atomic.LoadPointer(mainPtr))
+	subs := []Subscription{}
+	switch {
+	case main.cNode != nil:
+		// Traverse all branches.
+		for word, br := range main.cNode.branches {
+			cwords := append([]string{}, words...)
+			cwords = append(cwords, word)
+			if br.iNode != nil {
+				// If the branch has an I-node, isubscriptions is called recursively.
+				s, ok := c.isubscriptions(br.iNode, i, cwords)
+				if !ok {
+					return nil, false
+				}
+				subs = append(subs, s...)
+			}
+			for s := range br.subs {
+				subs = append(subs, Subscription{
+					Topic:      strings.Join(cwords, delimiter),
+					subscriber: s,
+					Receiver:   s.Ch(),
+				})
+			}
+		}
+
+		return subs, true
+	case main.tNode != nil:
+		clean(parent)
+		return nil, false
+	default:
+		panic("csTrie is in an invalid state")
+	}
 }
 
 // toContracted ensures that every I-node except the root points to a C-node

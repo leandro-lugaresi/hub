@@ -1,44 +1,76 @@
 package hub
 
 import (
-	"sync"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
 
-func TestProcessSubscribers(t *testing.T) {
-	tests := []struct {
-		name     string
-		cap      int
-		blocking bool
-	}{
-		{name: "blocking and unbuffered", cap: 0, blocking: true},
-		{name: "blocking and buffered", cap: 10, blocking: true},
-		{name: "blocking and negative buffer", cap: -10, blocking: true},
-		{name: "nonBlocking and unbuffered", cap: 0, blocking: false},
-		{name: "nonBlocking and buffered", cap: 10, blocking: false},
-		{name: "nonBlocking and negative buffer", cap: -10, blocking: false},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			h := New()
-			var subs *Subscription
-			if tt.blocking {
-				subs = h.Subscribe("a.*.c", tt.cap)
-			} else {
-				subs = h.NonBlockingSubscribe("a.*.c", tt.cap)
-			}
-			var wg sync.WaitGroup
-			wg.Add(2)
-			go processSubscription(subs, func(msg Message) {
-				wg.Done()
-			})
-			h.Publish(Message{Name: "a.b.c"})
-			h.Publish(Message{Name: "a.c.c"})
-			wg.Wait()
-		})
-	}
+type messageCounter struct {
+	c   int64
+	sub Subscription
+}
+
+func TestHub(t *testing.T) {
+	h := New()
+
+	sub0 := h.Subscribe("forex.*", 0)
+	sub1 := h.Subscribe("*.usd", 10)
+	sub2 := h.Subscribe("forex.eur", -10)
+	sub3 := h.NonBlockingSubscribe("*.eur", 0)
+	sub4 := h.NonBlockingSubscribe("forex.*", 10)
+	sub5 := h.NonBlockingSubscribe("trade", -10)
+	sub6 := h.Subscribe("*", 10)
+
+	c0 := newMessageCounter(sub0)
+	c1 := newMessageCounter(sub1)
+	c2 := newMessageCounter(sub2)
+	c3 := newMessageCounter(sub3)
+	c4 := newMessageCounter(sub4)
+	c5 := newMessageCounter(sub5)
+	c6 := newMessageCounter(sub6)
+
+	h.Publish(Message{Name: "forex.eur"})
+	h.Publish(Message{Name: "forex"})
+	h.Publish(Message{Name: "trade.jpy"})
+	h.Publish(Message{Name: "forex.jpy"})
+	h.Publish(Message{Name: "trade"})
+
+	time.Sleep(time.Millisecond)
+
+	require.Equal(t, int64(2), c0.count(), "Messages processed by sub0")
+	require.Equal(t, int64(0), c1.count(), "Messages processed by sub1")
+	require.Equal(t, int64(1), c2.count(), "Messages processed by sub2")
+	require.Equal(t, int64(1), c3.count(), "Messages processed by sub3")
+	require.Equal(t, int64(2), c4.count(), "Messages processed by sub4")
+	require.Equal(t, int64(1), c5.count(), "Messages processed by sub5")
+	require.Equal(t, int64(2), c6.count(), "Messages processed by sub6")
+
+	c0.reset()
+	c1.reset()
+	c2.reset()
+	c3.reset()
+	c4.reset()
+	c5.reset()
+	c6.reset()
+
+	h.Close()
+
+	h.Publish(Message{Name: "forex.eur"})
+	h.Publish(Message{Name: "forex"})
+	h.Publish(Message{Name: "trade.jpy"})
+	h.Publish(Message{Name: "forex.jpy"})
+	h.Publish(Message{Name: "trade"})
+
+	require.Equal(t, int64(0), c0.count(), "Messages processed by sub0")
+	require.Equal(t, int64(0), c1.count(), "Messages processed by sub1")
+	require.Equal(t, int64(0), c2.count(), "Messages processed by sub2")
+	require.Equal(t, int64(0), c3.count(), "Messages processed by sub3")
+	require.Equal(t, int64(0), c4.count(), "Messages processed by sub4")
+	require.Equal(t, int64(0), c5.count(), "Messages processed by sub5")
+	require.Equal(t, int64(0), c6.count(), "Messages processed by sub6")
 }
 
 func TestNonBlockingSubscriberShouldAlertIfLoseMessages(t *testing.T) {
@@ -54,8 +86,20 @@ func TestNonBlockingSubscriberShouldAlertIfLoseMessages(t *testing.T) {
 	require.Equal(t, "a.*.c", msg.Fields["topic"])
 }
 
-func processSubscription(s *Subscription, op func(msg Message)) {
-	for msg := range s.Receiver {
-		op(msg)
-	}
+func newMessageCounter(s Subscription) *messageCounter {
+	ms := &messageCounter{sub: s, c: 0}
+	go func(ms *messageCounter) {
+		for range ms.sub.Receiver {
+			atomic.AddInt64(&ms.c, 1)
+		}
+	}(ms)
+	return ms
+}
+
+func (ms *messageCounter) count() int64 {
+	return atomic.LoadInt64(&ms.c)
+}
+
+func (ms *messageCounter) reset() {
+	atomic.StoreInt64(&ms.c, int64(0))
 }

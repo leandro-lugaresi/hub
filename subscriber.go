@@ -1,14 +1,22 @@
 package hub
 
+import (
+	"sync"
+)
+
 type (
 	AlertFunc func(missed int)
 
 	nonBlockingSubscriber struct {
-		ch    chan Message
-		alert AlertFunc
+		ch        chan Message
+		alert     AlertFunc
+		onceClose sync.Once
 	}
 	// blockingSubscriber uses an channel to receive events.
-	blockingSubscriber chan Message
+	blockingSubscriber struct {
+		ch        chan Message
+		onceClose sync.Once
+	}
 )
 
 // newNonBlockingSubscriber returns a new nonBlockingSubscriber
@@ -33,25 +41,41 @@ func (s *nonBlockingSubscriber) Set(msg Message) {
 	}
 }
 
-// Ch return the channel used by subscriptions to consume messages
+// Ch return the channel used by subscriptions to consume messages.
 func (s *nonBlockingSubscriber) Ch() <-chan Message {
 	return s.ch
 }
 
+// Close will close the internal channel and stop receiving messages
+func (s *nonBlockingSubscriber) Close() {
+	s.onceClose.Do(func() {
+		close(s.ch)
+	})
+}
+
 // newBlockingSubscriber returns a blocking subscriber using chanels imternally.
-func newBlockingSubscriber(cap int) subscriber {
+func newBlockingSubscriber(cap int) *blockingSubscriber {
 	if cap < 0 {
 		cap = 0
 	}
-	return make(blockingSubscriber, cap)
+	return &blockingSubscriber{
+		ch: make(chan Message, cap),
+	}
 }
 
 // Set will send the message using the channel
-func (ch blockingSubscriber) Set(msg Message) {
-	ch <- msg
+func (s *blockingSubscriber) Set(msg Message) {
+	s.ch <- msg
 }
 
 // Ch return the channel used by subscriptions to consume messages
-func (ch blockingSubscriber) Ch() <-chan Message {
-	return ch
+func (s *blockingSubscriber) Ch() <-chan Message {
+	return s.ch
+}
+
+// Close will close the internal channel and stop receiving messages
+func (s *blockingSubscriber) Close() {
+	s.onceClose.Do(func() {
+		close(s.ch)
+	})
 }

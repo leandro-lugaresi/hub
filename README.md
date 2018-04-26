@@ -17,6 +17,8 @@
 -   [Install](#install)
 -   [Usage](#usage)
 -   [Examples & Demos](#examples--demos)
+-   [Benchmarks](#benchmarks)
+-   [CSTrie](#cstrie)
 -   [Contribute](CONTRIBUTING.md)
 -   [Code of conduct](CODE_OF_CONDUCT.md)
 
@@ -54,45 +56,77 @@ package main
 
 import (
 	"fmt"
-	"time"
+	"sync"
 
 	"github.com/leandro-lugaresi/hub"
 )
 func main() {
 	h := hub.New()
+	var wg sync.WaitGroup
+	// the cap param is used to create one buffered channel with cap = 10
+	// If you wan an unbuferred channel use the 0 cap
+	sub := h.Subscribe("account.*.failed", 10)
+	wg.Add(1)
+	go func(s hub.Subscription) {
+		for msg := range s.Receiver {
+			fmt.Printf("receive msg with topic %s and id %d\n", msg.Name, msg.Fields["id"])
+		}
+		wg.Done()
+	}(sub)
 
-		// the cap param is used to create one buffered channel with cap = 10
-		// If you wan an unbuferred channel use the 0 cap
-		sub := h.Subscribe("account.*.failed", 10)
-		go func(s *hub.Subscription) {
-			for msg := range s.Receiver {
-				fmt.Printf("receive msg with topic %s and id %d\n", msg.Name, msg.Int("id"))
-			}
-		}(sub)
+	h.Publish(hub.Message{
+		Name:   "account.login.failed",
+		Fields: hub.Fields{"id": 123},
+	})
+	h.Publish(hub.Message{
+		Name:   "account.changepassword.failed",
+		Fields: hub.Fields{"id": 456},
+	})
+	h.Publish(hub.Message{
+		Name:   "account.foo.failed",
+		Fields: hub.Fields{"id": 789},
+	})
 
-		h.Publish(hub.Message{
-			Name:   "account.login.failed",
-			Fields: hub.Fields{"id": 123},
-		})
+	// finish all the subscribers
+	h.Close()
+	// wait until finish all the messages on buffer
+	wg.Wait()
 
-		h.Publish(hub.Message{
-			Name:   "account.changepassword.failed",
-			Fields: hub.Fields{"id": 456},
-		})
-
-		h.Publish(hub.Message{
-			Name:   "account.foo.failed",
-			Fields: hub.Fields{"id": 789},
-		})
-		// TODO: remove sleep when the close method is implemented
-		time.Sleep(time.Second)
-		// Output:
-		// receive msg with topic account.login.failed and id 123
-		// receive msg with topic account.changepassword.failed and id 456
-		// receive msg with topic account.foo.failed and id 789
+	// Output:
+	// receive msg with topic account.login.failed and id 123
+	// receive msg with topic account.changepassword.failed and id 456
+	// receive msg with topic account.foo.failed and id 789
 }
 ```
+See more [here](https://godoc.org/github.com/leandro-lugaresi/hub#example-Hub)!
 
+## Benchmarks
+
+To run the benchmarks you can execute:
+```bash
+make bench
+```
+Currently, I only have the benchmarks of the CSTrie used internally. I will provide more benchmarks.
+
+## Throughput
+
+The project have one test for throughput, just execute:
+```bash
+make throughput
+```
+In a intel(R) core(TM) i5-4460 CPU @ 3.20GHz x4 we got this results:
+```
+go test -v -timeout 60s github.com/leandro-lugaresi/hub -run ^TestThroughput -args -throughput
+=== RUN   TestThroughput
+1317530.091292 msg/sec
+--- PASS: TestThroughput (3.04s)
+PASS
+ok      github.com/leandro-lugaresi/hub 3.192s
+```
+
+## CSTrie
+
+This project uses internally an awesome Concurrent Subscription Trie done by [@tylertreat](https://github.com/tylertreat). If you want to learn more about see this [blog post](http://bravenewgeek.com/fast-topic-matching/) and the code is [here](https://github.com/tylertreat/fast-topic-matching)
 ---
 
 This project adheres to the Contributor Covenant [code of conduct](CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code.
