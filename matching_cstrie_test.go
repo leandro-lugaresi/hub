@@ -30,13 +30,13 @@ func TestCSTrieMatcher(t *testing.T) {
 		s2 = discardSubscriber(2)
 	)
 
-	sub0 := m.Subscribe("forex.*", s0)
-	sub1 := m.Subscribe("*.usd", s0)
-	sub2 := m.Subscribe("forex.eur", s0)
-	sub3 := m.Subscribe("*.eur", s1)
-	sub4 := m.Subscribe("forex.*", s1)
-	sub5 := m.Subscribe("trade", s1)
-	sub6 := m.Subscribe("*", s2)
+	sub0 := m.Subscribe([]string{"forex.*"}, s0)
+	sub1 := m.Subscribe([]string{"*.usd"}, s0)
+	sub2 := m.Subscribe([]string{"forex.eur"}, s0)
+	sub3 := m.Subscribe([]string{"*.eur"}, s1)
+	sub4 := m.Subscribe([]string{"forex.*"}, s1)
+	sub5 := m.Subscribe([]string{"trade"}, s1)
+	sub6 := m.Subscribe([]string{"*"}, s2)
 	assert.Len(m.Subscriptions(), 7)
 
 	assertEqual(assert, []subscriber{s0, s1}, m.Lookup("forex.eur"))
@@ -69,7 +69,7 @@ func BenchmarkCSTrieMatcherSubscribe(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		m.Subscribe("foo.*.baz.qux.quux", s0)
+		m.Subscribe([]string{"foo.*.baz.qux.quux"}, s0)
 	}
 }
 
@@ -78,7 +78,7 @@ func BenchmarkCSTrieMatcherUnsubscribe(b *testing.B) {
 		m  = newCSTrieMatcher()
 		s0 = discardSubscriber(0)
 	)
-	id := m.Subscribe("foo.*.baz.qux.quux", s0)
+	id := m.Subscribe([]string{"foo.*.baz.qux.quux"}, s0)
 	populateMatcher(m, 1000, 5)
 
 	b.ResetTimer()
@@ -92,7 +92,7 @@ func BenchmarkCSTrieMatcherLookup(b *testing.B) {
 		m  = newCSTrieMatcher()
 		s0 = discardSubscriber(0)
 	)
-	m.Subscribe("foo.*.baz.qux.quux", s0)
+	m.Subscribe([]string{"foo.*.baz.qux.quux"}, s0)
 	populateMatcher(m, 1000, 5)
 
 	b.ResetTimer()
@@ -109,7 +109,7 @@ func BenchmarkCSTrieMatcherSubscribeCold(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		m.Subscribe("foo.*.baz.qux.quux", s0)
+		m.Subscribe([]string{"foo.*.baz.qux.quux"}, s0)
 	}
 }
 
@@ -118,7 +118,7 @@ func BenchmarkCSTrieMatcherUnsubscribeCold(b *testing.B) {
 		m  = newCSTrieMatcher()
 		s0 = discardSubscriber(0)
 	)
-	id := m.Subscribe("foo.*.baz.qux.quux", s0)
+	id := m.Subscribe([]string{"foo.*.baz.qux.quux"}, s0)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -131,7 +131,7 @@ func BenchmarkCSTrieMatcherLookupCold(b *testing.B) {
 		m  = newCSTrieMatcher()
 		s0 = discardSubscriber(0)
 	)
-	m.Subscribe("foo.*.baz.qux.quux", s0)
+	m.Subscribe([]string{"foo.*.baz.qux.quux"}, s0)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {

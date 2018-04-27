@@ -51,7 +51,7 @@ func TestThroughput(t *testing.T) {
 	}
 	var wg sync.WaitGroup
 	for _, topic := range topics {
-		sub := h.Subscribe(topic, 200)
+		sub := h.Subscribe(200, topic)
 		go func(s Subscription) {
 			for range s.Receiver {
 			}

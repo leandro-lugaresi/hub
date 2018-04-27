@@ -174,16 +174,18 @@ func newCSTrieMatcher() matcher {
 }
 
 // Subscribe adds the subscriber to the topic and returns a Subscription.
-func (c *csTrieMatcher) Subscribe(topic string, sub subscriber) Subscription {
+func (c *csTrieMatcher) Subscribe(topics []string, sub subscriber) Subscription {
 	var (
-		words   = strings.Split(topic, delimiter)
 		rootPtr = (*unsafe.Pointer)(unsafe.Pointer(&c.root))
 		root    = (*iNode)(atomic.LoadPointer(rootPtr))
 	)
-	if !c.iinsert(root, nil, words, sub) {
-		return c.Subscribe(topic, sub)
+	for _, topic := range topics {
+		words := strings.Split(topic, delimiter)
+		if !c.iinsert(root, nil, words, sub) {
+			return c.Subscribe(topics, sub)
+		}
 	}
-	return Subscription{Topic: topic, Receiver: sub.Ch(), subscriber: sub}
+	return Subscription{Topics: topics, Receiver: sub.Ch(), subscriber: sub}
 }
 
 func (c *csTrieMatcher) iinsert(i, parent *iNode, words []string, sub subscriber) bool {
@@ -239,12 +241,14 @@ func (c *csTrieMatcher) iinsert(i, parent *iNode, words []string, sub subscriber
 // Unsubscribe removes the Subscription.
 func (c *csTrieMatcher) Unsubscribe(sub Subscription) {
 	var (
-		words   = strings.Split(sub.Topic, delimiter)
 		rootPtr = (*unsafe.Pointer)(unsafe.Pointer(&c.root))
 		root    = (*iNode)(atomic.LoadPointer(rootPtr))
 	)
-	if !c.iremove(root, nil, nil, words, 0, sub.subscriber) {
-		c.Unsubscribe(sub)
+	for _, topic := range sub.Topics {
+		words := strings.Split(topic, delimiter)
+		if !c.iremove(root, nil, nil, words, 0, sub.subscriber) {
+			c.Unsubscribe(sub)
+		}
 	}
 }
 
@@ -421,7 +425,7 @@ func (c *csTrieMatcher) isubscriptions(i, parent *iNode, words []string) ([]Subs
 			}
 			for s := range br.subs {
 				subs = append(subs, Subscription{
-					Topic:      strings.Join(cwords, delimiter),
+					Topics:     []string{strings.Join(cwords, delimiter)},
 					subscriber: s,
 					Receiver:   s.Ch(),
 				})

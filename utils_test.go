@@ -44,7 +44,7 @@ func benchmarkMatcher(b *testing.B, numItems, numThreads int, m matcher, doSubs 
 			go func(j int) {
 				for n, key := range itemsToInsert[j] {
 					if doSubs(n) {
-						m.Subscribe(key, sub)
+						m.Subscribe([]string{key}, sub)
 						continue
 					}
 					m.Lookup(key)
@@ -92,6 +92,6 @@ func populateMatcher(m matcher, num, topicSize int) {
 			topic += prefix + strconv.Itoa(rand.Int())
 			prefix = "."
 		}
-		m.Subscribe(topic, discardSubscriber(0))
+		m.Subscribe([]string{topic}, discardSubscriber(0))
 	}
 }
