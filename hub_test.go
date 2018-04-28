@@ -16,13 +16,13 @@ type messageCounter struct {
 func TestHub(t *testing.T) {
 	h := New()
 
-	sub0 := h.Subscribe("forex.*", 0)
-	sub1 := h.Subscribe("*.usd", 10)
-	sub2 := h.Subscribe("forex.eur", -10)
-	sub3 := h.NonBlockingSubscribe("*.eur", 0)
-	sub4 := h.NonBlockingSubscribe("forex.*", 10)
-	sub5 := h.NonBlockingSubscribe("trade", -10)
-	sub6 := h.Subscribe("*", 10)
+	sub0 := h.Subscribe(0, "forex.*")
+	sub1 := h.Subscribe(10, "*.usd")
+	sub2 := h.Subscribe(-10, "forex.eur", "forex.*")
+	sub3 := h.NonBlockingSubscribe(0, "*.eur", "trade")
+	sub4 := h.NonBlockingSubscribe(10, "forex.*")
+	sub5 := h.NonBlockingSubscribe(-10, "trade")
+	sub6 := h.Subscribe(10, "*")
 
 	c0 := newMessageCounter(sub0)
 	c1 := newMessageCounter(sub1)
@@ -42,8 +42,8 @@ func TestHub(t *testing.T) {
 
 	require.Equal(t, int64(2), c0.count(), "Messages processed by sub0")
 	require.Equal(t, int64(0), c1.count(), "Messages processed by sub1")
-	require.Equal(t, int64(1), c2.count(), "Messages processed by sub2")
-	require.Equal(t, int64(1), c3.count(), "Messages processed by sub3")
+	require.Equal(t, int64(2), c2.count(), "Messages processed by sub2")
+	require.Equal(t, int64(2), c3.count(), "Messages processed by sub3")
 	require.Equal(t, int64(2), c4.count(), "Messages processed by sub4")
 	require.Equal(t, int64(1), c5.count(), "Messages processed by sub5")
 	require.Equal(t, int64(2), c6.count(), "Messages processed by sub6")
@@ -75,15 +75,15 @@ func TestHub(t *testing.T) {
 
 func TestNonBlockingSubscriberShouldAlertIfLoseMessages(t *testing.T) {
 	h := New()
-	h.NonBlockingSubscribe("a.*.c", 10)
-	subsAlert := h.Subscribe(AlertTopic, 1)
+	h.NonBlockingSubscribe(10, "a.*.c")
+	subsAlert := h.Subscribe(1, AlertTopic)
 	// send messages without a working subscriber
 	for i := 0; i < 11; i++ {
 		h.Publish(Message{Name: "a.c.c", Fields: Fields{"i": i}})
 	}
 	msg := <-subsAlert.Receiver
 	require.Equal(t, 1, msg.Fields["missed"])
-	require.Equal(t, "a.*.c", msg.Fields["topic"])
+	require.Equal(t, []string{"a.*.c"}, msg.Fields["topic"])
 }
 
 func newMessageCounter(s Subscription) *messageCounter {

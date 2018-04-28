@@ -23,7 +23,7 @@ const (
 type (
 	// Subscription represents a topic subscription.
 	Subscription struct {
-		Topic      string
+		Topics     []string
 		Receiver   <-chan Message
 		subscriber subscriber
 	}
@@ -45,8 +45,8 @@ type (
 
 // matcher contains topic subscriptions and performs matches on them.
 type matcher interface {
-	// Subscribe adds the Subscriber to the topic and returns a Subscription.
-	Subscribe(topic string, sub subscriber) Subscription
+	// Subscribe adds the Subscriber to the topics and returns a Subscription.
+	Subscribe(topics []string, sub subscriber) Subscription
 
 	// Unsubscribe removes the Subscription.
 	Unsubscribe(sub Subscription)

@@ -65,7 +65,7 @@ func main() {
 	var wg sync.WaitGroup
 	// the cap param is used to create one buffered channel with cap = 10
 	// If you wan an unbuferred channel use the 0 cap
-	sub := h.Subscribe("account.*.failed", 10)
+	sub := h.Subscribe(10, "account.login.*", "account.changepassword.*")
 	wg.Add(1)
 	go func(s hub.Subscription) {
 		for msg := range s.Receiver {
@@ -83,11 +83,16 @@ func main() {
 		Fields: hub.Fields{"id": 456},
 	})
 	h.Publish(hub.Message{
+		Name:   "account.login.success",
+		Fields: hub.Fields{"id": 123},
+	})
+	// message not routed to this subscriber
+	h.Publish(hub.Message{
 		Name:   "account.foo.failed",
 		Fields: hub.Fields{"id": 789},
 	})
 
-	// finish all the subscribers
+	// close all the subscribers
 	h.Close()
 	// wait until finish all the messages on buffer
 	wg.Wait()
@@ -95,7 +100,7 @@ func main() {
 	// Output:
 	// receive msg with topic account.login.failed and id 123
 	// receive msg with topic account.changepassword.failed and id 456
-	// receive msg with topic account.foo.failed and id 789
+	// receive msg with topic account.login.success and id 123
 }
 ```
 See more [here](https://godoc.org/github.com/leandro-lugaresi/hub#example-Hub)!
@@ -127,6 +132,9 @@ ok      github.com/leandro-lugaresi/hub 3.192s
 ## CSTrie
 
 This project uses internally an awesome Concurrent Subscription Trie done by [@tylertreat](https://github.com/tylertreat). If you want to learn more about see this [blog post](http://bravenewgeek.com/fast-topic-matching/) and the code is [here](https://github.com/tylertreat/fast-topic-matching)
+
+
+
 ---
 
 This project adheres to the Contributor Covenant [code of conduct](CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code.

@@ -1,5 +1,7 @@
 package hub
 
+// AlertTopic is used to notify when a nonblocking subscriber loose one message
+// You can subscribe on this topic and log or send metrics.
 const AlertTopic = "hub.subscription.messageslost"
 
 type (
@@ -28,19 +30,19 @@ func (h *Hub) Publish(m Message) {
 // Subscribe create a blocking subscription to receive events for a given topic.
 // The cap param is used inside the subscriber and in this case used to create a channel.
 // cap(1) = unbuffered channel.
-func (h *Hub) Subscribe(topic string, cap int) Subscription {
-	return h.matcher.Subscribe(topic, newBlockingSubscriber(cap))
+func (h *Hub) Subscribe(cap int, topics ...string) Subscription {
+	return h.matcher.Subscribe(topics, newBlockingSubscriber(cap))
 }
 
 // NonBlockingSubscribe create a nonblocking subscription to receive events for a given topic.
 // This implementation use internally a ring buffer so if the buffer reaches the max capability the subscribe will override old messages.
-func (h *Hub) NonBlockingSubscribe(topic string, cap int) Subscription {
+func (h *Hub) NonBlockingSubscribe(cap int, topics ...string) Subscription {
 	return h.matcher.Subscribe(
-		topic,
+		topics,
 		newNonBlockingSubscriber(
 			cap,
 			AlertFunc(func(missed int) {
-				h.alert(missed, topic)
+				h.alert(missed, topics)
 			}),
 		))
 }
@@ -61,12 +63,12 @@ func (h *Hub) Close() {
 	}
 }
 
-func (h *Hub) alert(missed int, topic string) {
+func (h *Hub) alert(missed int, topics []string) {
 	h.Publish(Message{
 		Name: AlertTopic,
 		Fields: Fields{
 			"missed": missed,
-			"topic":  topic,
+			"topic":  topics,
 		},
 	})
 }
