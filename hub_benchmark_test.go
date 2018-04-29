@@ -8,44 +8,36 @@ import (
 )
 
 func BenchmarkPublishOnNonBlockingSubscribers(b *testing.B) {
-	var wg sync.WaitGroup
-	h := New()
-	subs := createSubscribers(h, 30, false)
-	wg.Add(len(subs))
-	processSubscriptionsForBench(subs, &wg)
-	runBenchmark(b, 100, 4, h)
-	h.Close()
-	wg.Wait()
+	runBenchmark(b, 100, 4, 30, false)
 }
 
 func BenchmarkPublishOnBlockingSubscribers(b *testing.B) {
-	var wg sync.WaitGroup
-	h := New()
-	subs := createSubscribers(h, 30, true)
-	wg.Add(len(subs))
-	processSubscriptionsForBench(subs, &wg)
-	runBenchmark(b, 100, 4, h)
-	h.Close()
-	wg.Wait()
+	runBenchmark(b, 100, 4, 30, true)
 }
 
-func runBenchmark(b *testing.B, numItems, numThreads int, h *Hub) {
+func runBenchmark(b *testing.B, numItems, numThreads, numSubscribers int, blocking bool) {
+	h := New()
+	subs := createSubscribers(h, numSubscribers, blocking)
+	var wgPub, wgSub sync.WaitGroup
+	wgSub.Add(len(subs))
 	itemsToInsert := generateTopics(numThreads, numItems)
 
+	processSubscriptionsForBench(subs, &wgSub)
 	b.ResetTimer()
-	var wg sync.WaitGroup
 	for i := 0; i < b.N; i++ {
-		wg.Add(numThreads)
+		wgPub.Add(numThreads)
 		for j := 0; j < numThreads; j++ {
 			go func(j int) {
 				for _, key := range itemsToInsert[j] {
 					h.Publish(Message{Name: key})
 				}
-				wg.Done()
+				wgPub.Done()
 			}(j)
 		}
-		wg.Wait()
+		wgPub.Wait()
 	}
+	h.Close()
+	wgSub.Wait()
 	b.StopTimer()
 }
 
