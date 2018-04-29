@@ -5,11 +5,11 @@ import (
 )
 
 type (
-	AlertFunc func(missed int)
+	alertFunc func(missed int)
 
 	nonBlockingSubscriber struct {
 		ch        chan Message
-		alert     AlertFunc
+		alert     alertFunc
 		onceClose sync.Once
 	}
 	// blockingSubscriber uses an channel to receive events.
@@ -22,7 +22,7 @@ type (
 // newNonBlockingSubscriber returns a new nonBlockingSubscriber
 // this subscriber will never block when sending an message, if the capacity is full
 // we will ignore the message and call the Alert function from the Alerter.
-func newNonBlockingSubscriber(cap int, alerter AlertFunc) *nonBlockingSubscriber {
+func newNonBlockingSubscriber(cap int, alerter alertFunc) *nonBlockingSubscriber {
 	if cap <= 0 {
 		cap = 10
 	}

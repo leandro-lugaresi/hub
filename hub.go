@@ -35,13 +35,13 @@ func (h *Hub) Subscribe(cap int, topics ...string) Subscription {
 }
 
 // NonBlockingSubscribe create a nonblocking subscription to receive events for a given topic.
-// This implementation use internally a ring buffer so if the buffer reaches the max capability the subscribe will override old messages.
+// This subscriber will loose messages if the buffer reaches the max capability.
 func (h *Hub) NonBlockingSubscribe(cap int, topics ...string) Subscription {
 	return h.matcher.Subscribe(
 		topics,
 		newNonBlockingSubscriber(
 			cap,
-			AlertFunc(func(missed int) {
+			alertFunc(func(missed int) {
 				h.alert(missed, topics)
 			}),
 		))
