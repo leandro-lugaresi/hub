@@ -10,6 +10,7 @@ type (
 	// Where every word is separated by dots `.` and you can use `*` as a wildcard.
 	Hub struct {
 		matcher matcher
+		fields  Fields
 	}
 )
 
@@ -22,8 +23,23 @@ func New() *Hub {
 
 // Publish will send an event to all the subscribers matching the event name.
 func (h *Hub) Publish(m Message) {
+	for k, v := range h.fields {
+		m.Fields[k] = v
+	}
 	for _, sub := range h.matcher.Lookup(m.Topic()) {
 		sub.Set(m)
+	}
+}
+
+// With creates a child Hub with the fields added to it.
+// When someone call Publish, this Fields will be added automatically into the message.
+func (h *Hub) With(f Fields) *Hub {
+	for k, v := range h.fields {
+		f[k] = v
+	}
+	return &Hub{
+		matcher: h.matcher,
+		fields:  f,
 	}
 }
 
