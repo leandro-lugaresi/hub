@@ -18,6 +18,7 @@ type (
 func New() *Hub {
 	return &Hub{
 		matcher: newCSTrieMatcher(),
+		fields:  Fields{},
 	}
 }
 
@@ -34,13 +35,17 @@ func (h *Hub) Publish(m Message) {
 // With creates a child Hub with the fields added to it.
 // When someone call Publish, this Fields will be added automatically into the message.
 func (h *Hub) With(f Fields) *Hub {
-	for k, v := range h.fields {
-		f[k] = v
-	}
-	return &Hub{
+	hub := Hub{
 		matcher: h.matcher,
-		fields:  f,
+		fields:  Fields{},
 	}
+	for k, v := range h.fields {
+		hub.fields[k] = v
+	}
+	for k, v := range f {
+		hub.fields[k] = v
+	}
+	return &hub
 }
 
 // Subscribe create a blocking subscription to receive events for a given topic.
