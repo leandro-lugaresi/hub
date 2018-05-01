@@ -86,6 +86,34 @@ func TestNonBlockingSubscriberShouldAlertIfLoseMessages(t *testing.T) {
 	require.Equal(t, []string{"a.*.c"}, msg.Fields["topic"])
 }
 
+func TestWith(t *testing.T) {
+	h := New()
+	subH1 := h.With(Fields{"hub": "subH1", "something": 123})
+	subH11 := subH1.With(Fields{"hub": "subH11", "field": 456})
+	subH2 := h.With(Fields{"hub": "subH2", "something": 789})
+
+	subs := h.Subscribe(5, "*")
+
+	h.Publish(Message{Name: "foo", Fields: Fields{"msg": 1}})
+	subH1.Publish(Message{Name: "foo", Fields: Fields{"msg": 2}})
+	subH11.Publish(Message{Name: "foo", Fields: Fields{"msg": 3}})
+	subH2.Publish(Message{Name: "foo", Fields: Fields{"msg": 4, "something": 1234}})
+
+	msg := <-subs.Receiver
+	require.Equal(t, Fields{"msg": 1}, msg.Fields)
+	msg = <-subs.Receiver
+	require.Equal(t, Fields{"msg": 2, "hub": "subH1", "something": 123}, msg.Fields)
+	msg = <-subs.Receiver
+	require.Equal(t, Fields{
+		"msg":       3,
+		"hub":       "subH11",
+		"something": 123,
+		"field":     456,
+	}, msg.Fields)
+	msg = <-subs.Receiver
+	require.Equal(t, Fields{"msg": 4, "hub": "subH2", "something": 789}, msg.Fields)
+}
+
 func newMessageCounter(s Subscription) *messageCounter {
 	ms := &messageCounter{sub: s, c: 0}
 	go func(ms *messageCounter) {
