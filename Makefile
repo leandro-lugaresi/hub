@@ -3,11 +3,11 @@ TEST_PATTERN?=./...
 TEST_OPTIONS?=-race
 
 setup: ## Install all the build and lint dependencies
-	go get -u github.com/alecthomas/gometalinter
-	go get -u github.com/pierrre/gotestcover
-	go get -u golang.org/x/tools/cmd/cover
-	go get -u github.com/stretchr/testify/require
-	gometalinter --install --update
+	sudo curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $$(go env GOPATH)/bin v1.22.2
+	GO111MODULE=off go get github.com/mfridman/tparse
+	GO111MODULE=off go get -u github.com/pierrre/gotestcover
+	GO111MODULE=off go get -u golang.org/x/tools/cmd/cover
+	go get -v -t ./...
 
 test: ## Run all the tests
 	gotestcover $(TEST_OPTIONS) -covermode=atomic -coverprofile=coverage.txt $(SOURCE_FILES) -run $(TEST_PATTERN) -timeout=1m
@@ -25,20 +25,7 @@ fmt: ## gofmt and goimports all go files
 	find . -name '*.go' -not -wholename './vendor/*' | while read -r file; do gofmt -w -s "$$file"; goimports -w "$$file"; done
 
 lint: ## Run all the linters
-	gometalinter --vendor --disable-all \
-		--enable=deadcode \
-		--enable=ineffassign \
-		--enable=gosimple \
-		--enable=staticcheck \
-		--enable=gofmt \
-		--enable=goimports \
-		--enable=dupl \
-		--enable=misspell \
-		--enable=errcheck \
-		--enable=vet \
-		--enable=vetshadow \
-		--deadline=10m \
-		./...
+	golangci-lint run
 
 ci: lint test ## Run all the tests and code checks
 
