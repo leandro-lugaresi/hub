@@ -9,43 +9,44 @@ conduct](/CODE_OF_CONDUCT.md).
 
 Prerequisites are:
 
-* Build:
-  * `make`
-  * [Go 1.9+](http://golang.org/doc/install)
+- Build:
+  - `make`
+  - [Go 1.9+](http://golang.org/doc/install)
 
-Clone `hub` from source into `$GOPATH`:
+Clone `hub` from source into some path:
 
 ```sh
-$ git clone git@github.com:leandro-lugaresi/hub.git $GOPATH/src/github.com/leandro-lugaresi/hub
-$ cd $GOPATH/src/github.com/leandro-lugaresi/hub
+git clone git@github.com:leandro-lugaresi/hub.git
+cd hub
 ```
 
-If you created a fork clone your fork and after add the my repository as upstream remote:
+If you created a fork clone your fork and add my repository as a upstream remote:
 
 ```sh
-$ git clone git@github.com:{your-name}/hub.git $GOPATH/src/github.com/leandro-lugaresi/hub
-$ cd $GOPATH/src/github.com/leandro-lugaresi/hub
-$ git remote add upstream git@github.com:leandro-lugaresi/hub.git
+git clone git@github.com:{your-name}/hub.git
+cd hub
+git remote add upstream git@github.com:leandro-lugaresi/hub.git
 ```
 
 ### Install
 
 Install the build and lint dependencies:
 
-``` sh
+```sh
 $ make setup
 ```
 
 A good way of making sure everything is all right is running the test suite:
 
-``` sh
+```sh
 $ make test
 ```
 
 ## Test your change
+
 When you are satisfied with the changes, we suggest you run:
 
-``` sh
+```sh
 $ make ci
 ```
 
