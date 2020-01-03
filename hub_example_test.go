@@ -13,11 +13,14 @@ func ExampleHub() {
 	// the cap param is used to create one buffered channel with cap = 10
 	// If you wan an unbuferred channel use the 0 cap
 	sub := h.Subscribe(10, "account.login.*", "account.changepassword.*")
+
 	wg.Add(1)
+
 	go func(s hub.Subscription) {
 		for msg := range s.Receiver {
 			fmt.Printf("receive msg with topic %s and id %d\n", msg.Name, msg.Fields["id"])
 		}
+
 		wg.Done()
 	}(sub)
 

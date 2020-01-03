@@ -81,6 +81,7 @@ func TestNonBlockingSubscriberShouldAlertIfLoseMessages(t *testing.T) {
 	for i := 0; i < 11; i++ {
 		h.Publish(Message{Name: "a.c.c", Fields: Fields{"i": i}})
 	}
+
 	msg := <-subsAlert.Receiver
 	require.Equal(t, 1, msg.Fields["missed"])
 	require.Equal(t, []string{"a.*.c"}, msg.Fields["topic"])
@@ -110,6 +111,7 @@ func TestWith(t *testing.T) {
 		"something": 123,
 		"field":     456,
 	}, msg.Fields)
+
 	msg = <-subs.Receiver
 	require.Equal(t, Fields{"msg": 4, "hub": "subH2", "something": 789}, msg.Fields)
 }
@@ -121,6 +123,7 @@ func newMessageCounter(s Subscription) *messageCounter {
 			atomic.AddInt64(&ms.c, 1)
 		}
 	}(ms)
+
 	return ms
 }
 

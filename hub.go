@@ -27,6 +27,7 @@ func (h *Hub) Publish(m Message) {
 	for k, v := range h.fields {
 		m.Fields[k] = v
 	}
+
 	for _, sub := range h.matcher.Lookup(m.Topic()) {
 		sub.Set(m)
 	}
@@ -42,9 +43,11 @@ func (h *Hub) With(f Fields) *Hub {
 	for k, v := range h.fields {
 		hub.fields[k] = v
 	}
+
 	for k, v := range f {
 		hub.fields[k] = v
 	}
+
 	return &hub
 }
 
@@ -79,6 +82,7 @@ func (h *Hub) Close() {
 	for _, s := range subs {
 		h.matcher.Unsubscribe(s)
 	}
+
 	for _, s := range subs {
 		s.subscriber.Close()
 	}

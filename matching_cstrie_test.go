@@ -65,9 +65,11 @@ func BenchmarkCSTrieMatcherSubscribe(b *testing.B) {
 		m  = newCSTrieMatcher()
 		s0 = discardSubscriber(0)
 	)
+
 	populateMatcher(m, 1000, 5)
 
 	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		m.Subscribe([]string{"foo.*.baz.qux.quux"}, s0)
 	}
@@ -77,11 +79,12 @@ func BenchmarkCSTrieMatcherUnsubscribe(b *testing.B) {
 	var (
 		m  = newCSTrieMatcher()
 		s0 = discardSubscriber(0)
+		id = m.Subscribe([]string{"foo.*.baz.qux.quux"}, s0)
 	)
-	id := m.Subscribe([]string{"foo.*.baz.qux.quux"}, s0)
-	populateMatcher(m, 1000, 5)
 
+	populateMatcher(m, 1000, 5)
 	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		m.Unsubscribe(id)
 	}
@@ -92,10 +95,11 @@ func BenchmarkCSTrieMatcherLookup(b *testing.B) {
 		m  = newCSTrieMatcher()
 		s0 = discardSubscriber(0)
 	)
+
 	m.Subscribe([]string{"foo.*.baz.qux.quux"}, s0)
 	populateMatcher(m, 1000, 5)
-
 	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		m.Lookup("foo.bar.baz.qux.quux")
 	}
@@ -108,6 +112,7 @@ func BenchmarkCSTrieMatcherSubscribeCold(b *testing.B) {
 	)
 
 	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		m.Subscribe([]string{"foo.*.baz.qux.quux"}, s0)
 	}
@@ -117,10 +122,11 @@ func BenchmarkCSTrieMatcherUnsubscribeCold(b *testing.B) {
 	var (
 		m  = newCSTrieMatcher()
 		s0 = discardSubscriber(0)
+		id = m.Subscribe([]string{"foo.*.baz.qux.quux"}, s0)
 	)
-	id := m.Subscribe([]string{"foo.*.baz.qux.quux"}, s0)
 
 	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		m.Unsubscribe(id)
 	}
@@ -131,9 +137,10 @@ func BenchmarkCSTrieMatcherLookupCold(b *testing.B) {
 		m  = newCSTrieMatcher()
 		s0 = discardSubscriber(0)
 	)
-	m.Subscribe([]string{"foo.*.baz.qux.quux"}, s0)
 
+	m.Subscribe([]string{"foo.*.baz.qux.quux"}, s0)
 	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		m.Lookup("foo.bar.baz.qux.quux")
 	}
