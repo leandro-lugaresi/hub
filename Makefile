@@ -5,12 +5,11 @@ TEST_OPTIONS?=-race
 setup: ## Install all the build and lint dependencies
 	sudo curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $$(go env GOPATH)/bin v1.22.2
 	GO111MODULE=off go get github.com/mfridman/tparse
-	GO111MODULE=off go get -u github.com/pierrre/gotestcover
 	GO111MODULE=off go get -u golang.org/x/tools/cmd/cover
 	go get -v -t ./...
 
 test: ## Run all the tests
-	gotestcover $(TEST_OPTIONS) -covermode=atomic -coverprofile=coverage.txt $(SOURCE_FILES) -run $(TEST_PATTERN) -timeout=1m
+	go test $(TEST_OPTIONS) -covermode=atomic -coverprofile=coverage.txt -timeout=1m -cover -json $(SOURCE_FILES) | $$(go env GOPATH)/bin/tparse -all
 
 throughput: ## Run the throughput tests
 	go test -v -timeout 60s github.com/leandro-lugaresi/hub -run ^TestThroughput -args -throughput
@@ -25,7 +24,7 @@ fmt: ## gofmt and goimports all go files
 	find . -name '*.go' -not -wholename './vendor/*' | while read -r file; do gofmt -w -s "$$file"; goimports -w "$$file"; done
 
 lint: ## Run all the linters
-	golangci-lint run
+	$$(go env GOPATH)/bin/golangci-lint run
 
 ci: lint test ## Run all the tests and code checks
 
