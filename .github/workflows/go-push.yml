@@ -32,3 +32,15 @@ jobs:
           name: codecov-umbrella
           yml: ./codecov.yml
           fail_ci_if_error: true
+
+  lint:
+    name: golangci-lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v1
+
+      - name: golangci-lint
+        uses: matoous/golangci-lint-action@v1.1.0
+        with:
+          config: .golangci.yml
