@@ -4,7 +4,7 @@
 
 [![Release](https://img.shields.io/github/release/leandro-lugaresi/hub.svg?style=flat-square)](https://github.com/leandro-lugaresi/hub/releases/latest)
 [![Software License](https://img.shields.io/github/license/leandro-lugaresi/hub.svg?style=flat-square)](LICENSE.md)
-[![Build Status](https://travis-ci.org/leandro-lugaresi/hub.svg?branch=master&style=flat-square)](https://travis-ci.org/leandro-lugaresi/hub)
+[![Actions Status](https://github.com/leandro-lugaresi/hub/workflows/Go/badge.svg)](https://github.com/leandro-lugaresi/hub/actions)
 [![Coverage Status](https://img.shields.io/codecov/c/github/leandro-lugaresi/hub/master.svg?style=flat-square)](https://codecov.io/gh/leandro-lugaresi/hub)
 [![Go Doc](https://img.shields.io/badge/godoc-reference-blue.svg?style=flat-square)](http://godoc.org/github.com/leandro-lugaresi/hub)
 [![Go Report Card](https://goreportcard.com/badge/github.com/leandro-lugaresi/hub?style=flat-square)](https://goreportcard.com/report/github.com/leandro-lugaresi/hub)
@@ -14,13 +14,13 @@
 
 ## Table of Contents
 
--   [Install](#install)
--   [Usage](#usage)
--   [Examples & Demos](#examples--demos)
--   [Benchmarks](#benchmarks)
--   [CSTrie](#cstrie)
--   [Contribute](CONTRIBUTING.md)
--   [Code of conduct](CODE_OF_CONDUCT.md)
+- [Install](#install)
+- [Usage](#usage)
+- [Examples & Demos](#examples--demos)
+- [Benchmarks](#benchmarks)
+- [CSTrie](#cstrie)
+- [Contribute](CONTRIBUTING.md)
+- [Code of conduct](CODE_OF_CONDUCT.md)
 
 ## Install
 
@@ -29,6 +29,7 @@ To install this library you can `go get` it but I encourage you to always vendor
 ```sh
 go get -u github.com/leandro-lugaresi/hub
 ```
+
 ```sh
 dep ensure --add github.com/leandro-lugaresi/hub
 ```
@@ -47,7 +48,7 @@ Hub provides subscribers as buffered (cap > `0`) and unbuffered (cap = 0) channe
 
 This library uses the same concept of topic exchanges on rabbiMQ, so the message name is used to find all the subscribers that match the topic, like a route.
 The topic must be a list of words delimited by dots (`.`) however, there is one important special case for binding keys:
-    `*` (star) can substitute for exactly one word.
+`*` (star) can substitute for exactly one word.
 
 ## Examples & Demos
 
@@ -103,23 +104,29 @@ func main() {
 	// receive msg with topic account.login.success and id 123
 }
 ```
+
 See more [here](https://godoc.org/github.com/leandro-lugaresi/hub#example-Hub)!
 
 ## Benchmarks
 
 To run the benchmarks you can execute:
+
 ```bash
 make bench
 ```
+
 Currently, I only have the benchmarks of the CSTrie used internally. I will provide more benchmarks.
 
 ## Throughput
 
 The project have one test for throughput, just execute:
+
 ```bash
 make throughput
 ```
+
 In a intel(R) core(TM) i5-4460 CPU @ 3.20GHz x4 we got this results:
+
 ```
 go test -v -timeout 60s github.com/leandro-lugaresi/hub -run ^TestThroughput -args -throughput
 === RUN   TestThroughput
@@ -132,8 +139,6 @@ ok      github.com/leandro-lugaresi/hub 3.192s
 ## CSTrie
 
 This project uses internally an awesome Concurrent Subscription Trie done by [@tylertreat](https://github.com/tylertreat). If you want to learn more about see this [blog post](http://bravenewgeek.com/fast-topic-matching/) and the code is [here](https://github.com/tylertreat/fast-topic-matching)
-
-
 
 ---
 
