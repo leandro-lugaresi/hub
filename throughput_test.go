@@ -24,7 +24,7 @@ var (
 	msgs   = make([]Message, numMsgs)
 )
 
-func init() {
+func setupTopics() {
 	for i := 0; i < numSubs; i++ {
 		switch {
 		case i%10 == 0:
@@ -47,6 +47,8 @@ func init() {
 }
 
 func TestThroughput(t *testing.T) {
+	setupTopics()
+
 	h := New()
 	var wg sync.WaitGroup
 
