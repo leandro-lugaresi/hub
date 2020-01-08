@@ -13,64 +13,91 @@ type messageCounter struct {
 	sub Subscription
 }
 
+// nolint:funlen
 func TestHub(t *testing.T) {
 	h := New()
+	defaultMessages := []Message{
+		{Name: "forex.eur"},
+		{Name: "forex"},
+		{Name: "trade.jpy"},
+		{Name: "forex.jpy"},
+		{Name: "trade"},
+		{Name: "trade.usd"},
+		{Name: "forex.usd"},
+		{Name: "trade.eur"},
+	}
+	testCases := []struct {
+		name          string
+		messages      []Message
+		subFN         func(h *Hub) Subscription
+		ExpectedCount int
+	}{
+		{
+			name:          "simple subscription unbuffered",
+			messages:      defaultMessages,
+			subFN:         func(h *Hub) Subscription { return h.Subscribe(0, "forex.*") },
+			ExpectedCount: 3,
+		},
+		{
+			name:          "simple subscription buffered",
+			messages:      defaultMessages,
+			subFN:         func(h *Hub) Subscription { return h.Subscribe(2, "*.usd") },
+			ExpectedCount: 2,
+		},
+		{
+			name:          "simple subscription with an invalid cap buffer",
+			messages:      defaultMessages,
+			subFN:         func(h *Hub) Subscription { return h.Subscribe(-1, "forex", "forex.eur", "forex.*") },
+			ExpectedCount: 4,
+		},
+		{
+			name:          "non blocking subscription unbuffered",
+			messages:      defaultMessages,
+			subFN:         func(h *Hub) Subscription { return h.NonBlockingSubscribe(0, "*.eur", "trade") },
+			ExpectedCount: 3,
+		},
+		{
+			name:          "non blocking subscription buffered",
+			messages:      defaultMessages,
+			subFN:         func(h *Hub) Subscription { return h.NonBlockingSubscribe(2, "forex", "forex.eur", "forex.*") },
+			ExpectedCount: 4,
+		},
+		{
+			name:          "non blocking subscription with an invalid cap buffer",
+			messages:      defaultMessages,
+			subFN:         func(h *Hub) Subscription { return h.NonBlockingSubscribe(-1, "trade") },
+			ExpectedCount: 1,
+		},
+		{
+			name:          "get all the messages",
+			messages:      defaultMessages,
+			subFN:         func(h *Hub) Subscription { return h.NonBlockingSubscribe(0, "*", "*.*") },
+			ExpectedCount: 8,
+		},
+	}
 
-	sub0 := h.Subscribe(0, "forex.*")
-	sub1 := h.Subscribe(10, "*.usd")
-	sub2 := h.Subscribe(-10, "forex.eur", "forex.*")
-	sub3 := h.NonBlockingSubscribe(0, "*.eur", "trade")
-	sub4 := h.NonBlockingSubscribe(10, "forex.*")
-	sub5 := h.NonBlockingSubscribe(-10, "trade")
-	sub6 := h.Subscribe(10, "*")
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			sub := tc.subFN(h)
+			counter := newMessageCounter(sub)
+			for _, m := range tc.messages {
+				time.Sleep(time.Millisecond)
+				h.Publish(m)
+			}
 
-	c0 := newMessageCounter(sub0)
-	c1 := newMessageCounter(sub1)
-	c2 := newMessageCounter(sub2)
-	c3 := newMessageCounter(sub3)
-	c4 := newMessageCounter(sub4)
-	c5 := newMessageCounter(sub5)
-	c6 := newMessageCounter(sub6)
+			time.Sleep(time.Second)
+			require.EqualValues(t, tc.ExpectedCount, counter.count())
 
-	h.Publish(Message{Name: "forex.eur"})
-	h.Publish(Message{Name: "forex"})
-	h.Publish(Message{Name: "trade.jpy"})
-	h.Publish(Message{Name: "forex.jpy"})
-	h.Publish(Message{Name: "trade"})
+			counter.reset()
+			h.Close()
 
-	time.Sleep(time.Millisecond)
-
-	require.Equal(t, int64(2), c0.count(), "Messages processed by sub0")
-	require.Equal(t, int64(0), c1.count(), "Messages processed by sub1")
-	require.Equal(t, int64(2), c2.count(), "Messages processed by sub2")
-	require.Equal(t, int64(2), c3.count(), "Messages processed by sub3")
-	require.Equal(t, int64(2), c4.count(), "Messages processed by sub4")
-	require.Equal(t, int64(1), c5.count(), "Messages processed by sub5")
-	require.Equal(t, int64(2), c6.count(), "Messages processed by sub6")
-
-	c0.reset()
-	c1.reset()
-	c2.reset()
-	c3.reset()
-	c4.reset()
-	c5.reset()
-	c6.reset()
-
-	h.Close()
-
-	h.Publish(Message{Name: "forex.eur"})
-	h.Publish(Message{Name: "forex"})
-	h.Publish(Message{Name: "trade.jpy"})
-	h.Publish(Message{Name: "forex.jpy"})
-	h.Publish(Message{Name: "trade"})
-
-	require.Equal(t, int64(0), c0.count(), "Messages processed by sub0")
-	require.Equal(t, int64(0), c1.count(), "Messages processed by sub1")
-	require.Equal(t, int64(0), c2.count(), "Messages processed by sub2")
-	require.Equal(t, int64(0), c3.count(), "Messages processed by sub3")
-	require.Equal(t, int64(0), c4.count(), "Messages processed by sub4")
-	require.Equal(t, int64(0), c5.count(), "Messages processed by sub5")
-	require.Equal(t, int64(0), c6.count(), "Messages processed by sub6")
+			for _, m := range tc.messages {
+				h.Publish(m)
+			}
+			require.EqualValues(t, 0, counter.count(), "after close the hub all the subsctibers MUST not get more events")
+		})
+	}
 }
 
 func TestNonBlockingSubscriberShouldAlertIfLoseMessages(t *testing.T) {
