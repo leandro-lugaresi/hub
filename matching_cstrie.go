@@ -372,7 +372,7 @@ func (c *csTrieMatcher) ilookup(i, parent *iNode, words []string) ([]subscriber,
 		subs := make(map[subscriber]struct{})
 
 		if exact != nil {
-			s, ok := c.bLookup(i, parent, main, exact, words)
+			s, ok := c.bLookup(i, exact, words)
 			if !ok {
 				return nil, false
 			}
@@ -383,7 +383,7 @@ func (c *csTrieMatcher) ilookup(i, parent *iNode, words []string) ([]subscriber,
 		}
 
 		if singleWC != nil {
-			s, ok := c.bLookup(i, parent, main, singleWC, words)
+			s, ok := c.bLookup(i, singleWC, words)
 			if !ok {
 				return nil, false
 			}
@@ -413,7 +413,7 @@ func (c *csTrieMatcher) ilookup(i, parent *iNode, words []string) ([]subscriber,
 // bLookup attempts to retrieve the Subscribers from the word path along the
 // given branch. True is returned if the Subscribers were retrieved, false if
 // the operation needs to be retried.
-func (c *csTrieMatcher) bLookup(i, parent *iNode, main *mainNode, b *branch, words []string) ([]subscriber, bool) {
+func (c *csTrieMatcher) bLookup(i *iNode, b *branch, words []string) ([]subscriber, bool) {
 	if len(words) > 1 {
 		// If more than 1 key is present in the path, the tree must be
 		// traversed deeper.
@@ -528,7 +528,7 @@ func cleanParent(i, parent, parentsParent *iNode, c *csTrieMatcher, word string)
 			}
 
 			if main.tNode != nil {
-				if !contract(parentsParent, parent, i, c, pMain) {
+				if !contract(parentsParent, parent, c, pMain) {
 					cleanParent(parentsParent, parent, i, c, word)
 				}
 			}
@@ -538,7 +538,7 @@ func cleanParent(i, parent, parentsParent *iNode, c *csTrieMatcher, word string)
 
 // contract performs a contraction of the parent's C-node if possible. Returns
 // true if the contraction succeeded, false if it needs to be retried.
-func contract(parentsParent, parent, i *iNode, c *csTrieMatcher, pMain *mainNode) bool {
+func contract(parentsParent, parent *iNode, c *csTrieMatcher, pMain *mainNode) bool {
 	ncn := toCompressed(pMain.cNode)
 	if len(ncn.cNode.branches) == 0 && parentsParent != nil {
 		// If the compressed C-node has no branches, it and the I-node above it

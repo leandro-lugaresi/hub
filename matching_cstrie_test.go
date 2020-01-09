@@ -66,7 +66,7 @@ func BenchmarkCSTrieMatcherSubscribe(b *testing.B) {
 		s0 = discardSubscriber(0)
 	)
 
-	populateMatcher(m, 1000, 5)
+	populateMatcher(m, 5)
 
 	b.ResetTimer()
 
@@ -82,7 +82,7 @@ func BenchmarkCSTrieMatcherUnsubscribe(b *testing.B) {
 		id = m.Subscribe([]string{"foo.*.baz.qux.quux"}, s0)
 	)
 
-	populateMatcher(m, 1000, 5)
+	populateMatcher(m, 5)
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
@@ -97,7 +97,7 @@ func BenchmarkCSTrieMatcherLookup(b *testing.B) {
 	)
 
 	m.Subscribe([]string{"foo.*.baz.qux.quux"}, s0)
-	populateMatcher(m, 1000, 5)
+	populateMatcher(m, 5)
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
@@ -147,73 +147,61 @@ func BenchmarkCSTrieMatcherLookupCold(b *testing.B) {
 }
 
 func BenchmarkMultithreaded1Thread5050CSTrie(b *testing.B) {
-	numItems := 1000
 	numThreads := 1
-	benchmarkMatcher(b, numItems, numThreads, newCSTrieMatcher(), percentual5050)
+	benchmarkMatcher(b, numThreads, newCSTrieMatcher(), percentual5050)
 }
 
 func BenchmarkMultithreaded2Thread5050CSTrie(b *testing.B) {
-	numItems := 1000
 	numThreads := 2
-	benchmarkMatcher(b, numItems, numThreads, newCSTrieMatcher(), percentual5050)
+	benchmarkMatcher(b, numThreads, newCSTrieMatcher(), percentual5050)
 }
 
 func BenchmarkMultithreaded4Thread5050CSTrie(b *testing.B) {
-	numItems := 1000
 	numThreads := 4
-	benchmarkMatcher(b, numItems, numThreads, newCSTrieMatcher(), percentual5050)
+	benchmarkMatcher(b, numThreads, newCSTrieMatcher(), percentual5050)
 }
 
 func BenchmarkMultithreaded8Thread5050CSTrie(b *testing.B) {
-	numItems := 1000
 	numThreads := 8
-	benchmarkMatcher(b, numItems, numThreads, newCSTrieMatcher(), percentual5050)
+	benchmarkMatcher(b, numThreads, newCSTrieMatcher(), percentual5050)
 }
 
 func BenchmarkMultithreaded12Thread5050CSTrie(b *testing.B) {
-	numItems := 1000
 	numThreads := 12
-	benchmarkMatcher(b, numItems, numThreads, newCSTrieMatcher(), percentual5050)
+	benchmarkMatcher(b, numThreads, newCSTrieMatcher(), percentual5050)
 }
 
 func BenchmarkMultithreaded16Thread5050CSTrie(b *testing.B) {
-	numItems := 1000
 	numThreads := 16
-	benchmarkMatcher(b, numItems, numThreads, newCSTrieMatcher(), percentual5050)
+	benchmarkMatcher(b, numThreads, newCSTrieMatcher(), percentual5050)
 }
 
 func BenchmarkMultithreaded1Thread9010CSTrie(b *testing.B) {
-	numItems := 1000
 	numThreads := 1
-	benchmarkMatcher(b, numItems, numThreads, newCSTrieMatcher(), percentual9010)
+	benchmarkMatcher(b, numThreads, newCSTrieMatcher(), percentual9010)
 }
 
 func BenchmarkMultithreaded2Thread9010CSTrie(b *testing.B) {
-	numItems := 1000
 	numThreads := 2
-	benchmarkMatcher(b, numItems, numThreads, newCSTrieMatcher(), percentual9010)
+	benchmarkMatcher(b, numThreads, newCSTrieMatcher(), percentual9010)
 }
 
 func BenchmarkMultithreaded4Thread9010CSTrie(b *testing.B) {
-	numItems := 1000
 	numThreads := 4
-	benchmarkMatcher(b, numItems, numThreads, newCSTrieMatcher(), percentual9010)
+	benchmarkMatcher(b, numThreads, newCSTrieMatcher(), percentual9010)
 }
 
 func BenchmarkMultithreaded8Thread9010CSTrie(b *testing.B) {
-	numItems := 1000
 	numThreads := 8
-	benchmarkMatcher(b, numItems, numThreads, newCSTrieMatcher(), percentual9010)
+	benchmarkMatcher(b, numThreads, newCSTrieMatcher(), percentual9010)
 }
 
 func BenchmarkMultithreaded12Thread9010CSTrie(b *testing.B) {
-	numItems := 1000
 	numThreads := 12
-	benchmarkMatcher(b, numItems, numThreads, newCSTrieMatcher(), percentual9010)
+	benchmarkMatcher(b, numThreads, newCSTrieMatcher(), percentual9010)
 }
 
 func BenchmarkMultithreaded16Thread9010CSTrie(b *testing.B) {
-	numItems := 1000
 	numThreads := 16
-	benchmarkMatcher(b, numItems, numThreads, newCSTrieMatcher(), percentual9010)
+	benchmarkMatcher(b, numThreads, newCSTrieMatcher(), percentual9010)
 }

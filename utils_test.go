@@ -30,13 +30,16 @@ func (d discardSubscriber) Set(msg Message)    {}
 func (d discardSubscriber) Ch() <-chan Message { return make(chan Message) }
 func (d discardSubscriber) Close()             {}
 
-func benchmarkMatcher(b *testing.B, numItems, numThreads int, m matcher, doSubs func(n int) bool) {
+var result []subscriber
+
+func benchmarkMatcher(b *testing.B, numThreads int, m matcher, doSubs func(n int) bool) {
+	numItems := 1000
 	itemsToInsert := generateTopics(numThreads, numItems)
 	sub := discardSubscriber(0)
 
 	var wg sync.WaitGroup
 
-	populateMatcher(m, 1000, 5)
+	populateMatcher(m, 3)
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
@@ -44,14 +47,18 @@ func benchmarkMatcher(b *testing.B, numItems, numThreads int, m matcher, doSubs 
 
 		for j := 0; j < numThreads; j++ {
 			go func(j int) {
+				var r []subscriber
+
 				for n, key := range itemsToInsert[j] {
 					if doSubs(n) {
 						m.Subscribe([]string{key}, sub)
 						continue
 					}
 
-					m.Lookup(key)
+					r = m.Lookup(key)
 				}
+
+				result = r
 
 				wg.Done()
 			}(j)
@@ -93,7 +100,9 @@ func generateTopics(numThreads, numItems int) [][]string {
 	return itemsToInsert
 }
 
-func populateMatcher(m matcher, num, topicSize int) {
+func populateMatcher(m matcher, topicSize int) {
+	num := 1000
+
 	for i := 0; i < num; i++ {
 		prefix := ""
 		topic := ""
