@@ -30,25 +30,36 @@ func (d discardSubscriber) Set(msg Message)    {}
 func (d discardSubscriber) Ch() <-chan Message { return make(chan Message) }
 func (d discardSubscriber) Close()             {}
 
-func benchmarkMatcher(b *testing.B, numItems, numThreads int, m matcher, doSubs func(n int) bool) {
+var result []subscriber
+
+func benchmarkMatcher(b *testing.B, numThreads int, m matcher, doSubs func(n int) bool) {
+	numItems := 1000
 	itemsToInsert := generateTopics(numThreads, numItems)
+	sub := discardSubscriber(0)
 
 	var wg sync.WaitGroup
-	sub := discardSubscriber(0)
-	populateMatcher(m, 1000, 5)
+
+	populateMatcher(m, 3)
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
 		wg.Add(numThreads)
+
 		for j := 0; j < numThreads; j++ {
 			go func(j int) {
+				var r []subscriber
+
 				for n, key := range itemsToInsert[j] {
 					if doSubs(n) {
 						m.Subscribe([]string{key}, sub)
 						continue
 					}
-					m.Lookup(key)
+
+					r = m.Lookup(key)
 				}
+
+				result = r
+
 				wg.Done()
 			}(j)
 		}
@@ -66,6 +77,7 @@ func percentual9010(n int) bool {
 
 func assertEqual(assert *assert.Assertions, expected, actual []subscriber) {
 	assert.Len(actual, len(expected))
+
 	for _, sub := range expected {
 		assert.Contains(actual, sub)
 	}
@@ -73,21 +85,28 @@ func assertEqual(assert *assert.Assertions, expected, actual []subscriber) {
 
 func generateTopics(numThreads, numItems int) [][]string {
 	itemsToInsert := make([][]string, 0, numThreads)
+
 	for i := 0; i < numThreads; i++ {
 		items := make([]string, 0, numItems)
+
 		for j := 0; j < numItems; j++ {
 			topic := strconv.Itoa(j%10) + "." + strconv.Itoa(j%50) + "." + strconv.Itoa(j)
 			items = append(items, topic)
 		}
+
 		itemsToInsert = append(itemsToInsert, items)
 	}
+
 	return itemsToInsert
 }
 
-func populateMatcher(m matcher, num, topicSize int) {
+func populateMatcher(m matcher, topicSize int) {
+	num := 1000
+
 	for i := 0; i < num; i++ {
 		prefix := ""
 		topic := ""
+
 		for j := 0; j < topicSize; j++ {
 			topic += prefix + strconv.Itoa(rand.Int())
 			prefix = "."

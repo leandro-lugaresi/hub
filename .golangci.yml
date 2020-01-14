@@ -1,0 +1,88 @@
+# This file contains all available configuration options
+# with their default values.
+
+# options for analysis running
+run:
+  # timeout for analysis, e.g. 30s, 5m, default is 1m
+  deadline: 10m
+
+# output configuration options
+output:
+  # colored-line-number|line-number|json|tab|checkstyle, default is "colored-line-number"
+  format: colored-line-number
+
+  # print lines of code with issue, default is true
+  print-issued-lnes: true
+
+  # print linter name in the end of issue text, default is true
+  print-linter-name: true
+
+# all available settings of specific linters
+linters-settings:
+  golint:
+    # minimal confidence for issues, default is 0.8
+    min-confidence: 0.8
+  gocyclo:
+    # minimal code complexity to report, 30 by default (but we recommend 10-20)
+    min-complexity: 20
+  maligned:
+    # print struct with more effective memory layout or not, false by default
+    suggest-new: true
+  goimports:
+    local-prefixes: github.com/empregoligado/rabbids
+  depguard:
+    list-type: blacklist
+    include-go-root: false
+    packages:
+      - github.com/davecgh/go-spew/spew
+  lll:
+    # max line length, lines longer will be reported. Default is 120.
+    # '\t' is counted as 1 character by default, and can be changed with the tab-width option
+    line-length: 130
+    # tab width in spaces. Default to 1.
+    tab-width: 4
+  unused:
+    # treat code as a program (not a library) and report unused exported identifiers; default is false.
+    # XXX: if you enable this setting, unused will report a lot of false-positives in text editors:
+    # if it's called for subdir of a project it can't find funcs usages. All text editor integrations
+    # with golangci-lint call it on a directory with the changed file.
+    check-exported: false
+  unparam:
+    # Inspect exported functions, default is false. Set to true if no external program/library imports your code.
+    # XXX: if you enable this setting, unparam will report a lot of false-positives in text editors:
+    # if it's called for subdir of a project it can't find external interfaces. All text editor integrations
+    # with golangci-lint call it on a directory with the changed file.
+    check-exported: false
+  wsl:
+    # If true append is only allowed to be cuddled if appending value is
+    # matching variables, fields or types on line above. Default is true.
+    strict-append: true
+    # Allow calls and assignments to be cuddled as long as the lines have any
+    # matching variables, fields or types. Default is true.
+    allow-assign-and-call: true
+    # Allow multiline assignments to be cuddled. Default is true.
+    allow-multiline-assign: true
+    # Allow declarations (var) to be cuddled.
+    allow-cuddle-declarations: true
+    # Allow trailing comments in ending of blocks
+    allow-trailing-comment: false
+    # Force newlines in end of case at this limit (0 = never).
+    force-case-trailing-whitespace: 0
+
+linters:
+  enable-all: true
+  disable:
+    - maligned
+    - prealloc
+    - gosec
+    - gochecknoglobals
+    - goimports
+    - gomnd
+
+issues:
+  # List of regexps of issue texts to exclude, empty list by default.
+  # But independently from this option we use default exclude patterns,
+  # it can be disabled by `exclude-use-default: false`. To list all
+  # excluded by default patterns execute `golangci-lint run --help`
+  # exclude:
+  # - newHTTP - result 1 (error) is always nil

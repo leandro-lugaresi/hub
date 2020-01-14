@@ -1,4 +1,4 @@
-name: Go
+name: Push
 on: [push]
 jobs:
   build:

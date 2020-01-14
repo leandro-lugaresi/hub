@@ -24,18 +24,20 @@ var (
 	msgs   = make([]Message, numMsgs)
 )
 
-func init() {
+func setupTopics() {
 	for i := 0; i < numSubs; i++ {
-		if i%10 == 0 {
+		switch {
+		case i%10 == 0:
 			topics[i] = fmt.Sprintf("*.%d.%d", rand.Intn(10), rand.Intn(10))
-		} else if i%25 == 0 {
+		case i%25 == 0:
 			topics[i] = fmt.Sprintf("%d.*.%d", rand.Intn(10), rand.Intn(10))
-		} else if i%45 == 0 {
+		case i%45 == 0:
 			topics[i] = fmt.Sprintf("%d.%d.*", rand.Intn(10), rand.Intn(10))
-		} else {
+		default:
 			topics[i] = fmt.Sprintf("%d.%d.%d", rand.Intn(10), rand.Intn(10), rand.Intn(10))
 		}
 	}
+
 	for i := 0; i < numMsgs; i++ {
 		topic := topics[i%numSubs]
 		msgs[i] = Message{
@@ -45,27 +47,35 @@ func init() {
 }
 
 func TestThroughput(t *testing.T) {
+	setupTopics()
+
 	h := New()
+	var wg sync.WaitGroup
+
 	if !*throughputTest {
 		t.Skip("throughputTests skipped")
 	}
-	var wg sync.WaitGroup
+
 	for _, topic := range topics {
 		sub := h.Subscribe(200, topic)
 		go func(s Subscription) {
 			for range s.Receiver {
 			}
+
 			wg.Done()
 		}(sub)
 	}
 
 	before := time.Now()
+
 	wg.Add(numPublishers)
+
 	for i := 0; i < numPublishers; i++ {
 		go func() {
 			for _, msg := range msgs {
 				h.Publish(msg)
 			}
+
 			wg.Done()
 		}()
 	}
@@ -73,6 +83,7 @@ func TestThroughput(t *testing.T) {
 	wg.Add(numSubs)
 	h.Close()
 	wg.Wait()
+
 	dur := time.Since(before)
 	throughput := numMsgs * numPublishers / dur.Seconds()
 	fmt.Printf("%f msg/sec\n", throughput)

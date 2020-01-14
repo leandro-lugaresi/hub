@@ -43,7 +43,9 @@ func newCNode(words []string, sub subscriber) *cNode {
 			},
 		}
 	}
+
 	nin := &iNode{main: &mainNode{cNode: newCNode(words[1:], sub)}}
+
 	return &cNode{
 		branches: map[string]*branch{
 			words[0]: {subs: map[subscriber]struct{}{}, iNode: nin},
@@ -58,6 +60,7 @@ func (c *cNode) inserted(words []string, sub subscriber) *cNode {
 	for key, branch := range c.branches {
 		branches[key] = branch
 	}
+
 	var br *branch
 	if len(words) == 1 {
 		br = &branch{subs: map[subscriber]struct{}{sub: {}}}
@@ -67,7 +70,9 @@ func (c *cNode) inserted(words []string, sub subscriber) *cNode {
 			iNode: &iNode{main: &mainNode{cNode: newCNode(words[1:], sub)}},
 		}
 	}
+
 	branches[words[0]] = br
+
 	return &cNode{branches: branches}
 }
 
@@ -77,15 +82,20 @@ func (c *cNode) updated(word string, sub subscriber) *cNode {
 	for word, branch := range c.branches {
 		branches[word] = branch
 	}
+
 	newBranch := &branch{subs: map[subscriber]struct{}{sub: {}}}
 	br, ok := branches[word]
+
 	if ok {
 		for id, sub := range br.subs {
 			newBranch.subs[id] = sub
 		}
+
 		newBranch.iNode = br.iNode
 	}
+
 	branches[word] = newBranch
+
 	return &cNode{branches: branches}
 }
 
@@ -96,7 +106,9 @@ func (c *cNode) updatedBranch(word string, in *iNode, br *branch) *cNode {
 	for key, branch := range c.branches {
 		branches[key] = branch
 	}
+
 	branches[word] = br.updated(in)
+
 	return &cNode{branches: branches}
 }
 
@@ -107,6 +119,7 @@ func (c *cNode) removed(word string, sub subscriber) *cNode {
 	for word, branch := range c.branches {
 		branches[word] = branch
 	}
+
 	br, ok := branches[word]
 	if ok {
 		br = br.removed(sub)
@@ -118,6 +131,7 @@ func (c *cNode) removed(word string, sub subscriber) *cNode {
 			branches[word] = br
 		}
 	}
+
 	return &cNode{branches: branches}
 }
 
@@ -138,6 +152,7 @@ func (b *branch) updated(in *iNode) *branch {
 	for id, sub := range b.subs {
 		subs[id] = sub
 	}
+
 	return &branch{subs: subs, iNode: in}
 }
 
@@ -147,7 +162,9 @@ func (b *branch) removed(sub subscriber) *branch {
 	for id, sub := range b.subs {
 		subs[id] = sub
 	}
+
 	delete(subs, sub)
+
 	return &branch{subs: subs, iNode: b.iNode}
 }
 
@@ -155,10 +172,12 @@ func (b *branch) removed(sub subscriber) *branch {
 func (b *branch) subscribers() []subscriber {
 	subs := make([]subscriber, len(b.subs))
 	i := 0
+
 	for sub := range b.subs {
 		subs[i] = sub
 		i++
 	}
+
 	return subs
 }
 
@@ -179,12 +198,14 @@ func (c *csTrieMatcher) Subscribe(topics []string, sub subscriber) Subscription 
 		rootPtr = (*unsafe.Pointer)(unsafe.Pointer(&c.root))
 		root    = (*iNode)(atomic.LoadPointer(rootPtr))
 	)
+
 	for _, topic := range topics {
 		words := strings.Split(topic, delimiter)
 		if !c.iinsert(root, nil, words, sub) {
 			return c.Subscribe(topics, sub)
 		}
 	}
+
 	return Subscription{Topics: topics, Receiver: sub.Ch(), subscriber: sub}
 }
 
@@ -192,10 +213,12 @@ func (c *csTrieMatcher) iinsert(i, parent *iNode, words []string, sub subscriber
 	// Linearization point.
 	mainPtr := (*unsafe.Pointer)(unsafe.Pointer(&i.main))
 	main := (*mainNode)(atomic.LoadPointer(mainPtr))
+
 	switch {
 	case main.cNode != nil:
 		cn := main.cNode
 		br := cn.branches[words[0]]
+
 		if br == nil {
 			// If the relevant branch is not in the map, a copy of the C-node
 			// with the new entry is created. The linearization point is a
@@ -218,9 +241,11 @@ func (c *csTrieMatcher) iinsert(i, parent *iNode, words []string, sub subscriber
 			// added. The linearization point is a successful CAS.
 			nin := &iNode{main: &mainNode{cNode: newCNode(words[1:], sub)}}
 			ncn := &mainNode{cNode: cn.updatedBranch(words[0], nin, br)}
+
 			return atomic.CompareAndSwapPointer(
 				mainPtr, unsafe.Pointer(main), unsafe.Pointer(ncn))
 		}
+
 		if _, ok := br.subs[sub]; ok {
 			// Already subscribed.
 			return true
@@ -228,8 +253,8 @@ func (c *csTrieMatcher) iinsert(i, parent *iNode, words []string, sub subscriber
 		// Insert the subscriber by copying the C-node and updating the
 		// respective branch. The linearization point is a successful CAS.
 		ncn := &mainNode{cNode: cn.updated(words[0], sub)}
-		return atomic.CompareAndSwapPointer(
-			mainPtr, unsafe.Pointer(main), unsafe.Pointer(ncn))
+
+		return atomic.CompareAndSwapPointer(mainPtr, unsafe.Pointer(main), unsafe.Pointer(ncn))
 	case main.tNode != nil:
 		clean(parent)
 		return false
@@ -244,6 +269,7 @@ func (c *csTrieMatcher) Unsubscribe(sub Subscription) {
 		rootPtr = (*unsafe.Pointer)(unsafe.Pointer(&c.root))
 		root    = (*iNode)(atomic.LoadPointer(rootPtr))
 	)
+
 	for _, topic := range sub.Topics {
 		words := strings.Split(topic, delimiter)
 		if !c.iremove(root, nil, nil, words, 0, sub.subscriber) {
@@ -252,16 +278,16 @@ func (c *csTrieMatcher) Unsubscribe(sub Subscription) {
 	}
 }
 
-func (c *csTrieMatcher) iremove(i, parent, parentsParent *iNode, words []string,
-	wordIdx int, sub subscriber) bool {
-
+func (c *csTrieMatcher) iremove(i, parent, parentsParent *iNode, words []string, wordIdx int, sub subscriber) bool {
 	// Linearization point.
 	mainPtr := (*unsafe.Pointer)(unsafe.Pointer(&i.main))
 	main := (*mainNode)(atomic.LoadPointer(mainPtr))
+
 	switch {
 	case main.cNode != nil:
 		cn := main.cNode
 		br := cn.branches[words[wordIdx]]
+
 		if br == nil {
 			// If the relevant word is not in the map, the subscription doesn't
 			// exist.
@@ -280,6 +306,7 @@ func (c *csTrieMatcher) iremove(i, parent, parentsParent *iNode, words []string,
 			// Otherwise, the subscription doesn't exist.
 			return true
 		}
+
 		if _, ok := br.subs[sub]; !ok {
 			// Not subscribed.
 			return true
@@ -290,17 +317,21 @@ func (c *csTrieMatcher) iremove(i, parent, parentsParent *iNode, words []string,
 		// the subscriber from the trie - this is the linearization point.
 		ncn := cn.removed(words[wordIdx], sub)
 		cntr := c.toContracted(ncn, i)
+
 		if atomic.CompareAndSwapPointer(
 			mainPtr, unsafe.Pointer(main), unsafe.Pointer(cntr)) {
 			if parent != nil {
 				mainPtr = (*unsafe.Pointer)(unsafe.Pointer(&i.main))
 				main = (*mainNode)(atomic.LoadPointer(mainPtr))
+
 				if main.tNode != nil {
 					cleanParent(i, parent, parentsParent, c, words[wordIdx-1])
 				}
 			}
+
 			return true
 		}
+
 		return false
 	case main.tNode != nil:
 		clean(parent)
@@ -317,10 +348,12 @@ func (c *csTrieMatcher) Lookup(topic string) []subscriber {
 		rootPtr = (*unsafe.Pointer)(unsafe.Pointer(&c.root))
 		root    = (*iNode)(atomic.LoadPointer(rootPtr))
 	)
+
 	result, ok := c.ilookup(root, nil, words)
 	if !ok {
 		return c.Lookup(topic)
 	}
+
 	return result
 }
 
@@ -331,35 +364,43 @@ func (c *csTrieMatcher) ilookup(i, parent *iNode, words []string) ([]subscriber,
 	// Linearization point.
 	mainPtr := (*unsafe.Pointer)(unsafe.Pointer(&i.main))
 	main := (*mainNode)(atomic.LoadPointer(mainPtr))
+
 	switch {
 	case main.cNode != nil:
 		// Traverse exact-match branch and single-word-wildcard branch.
 		exact, singleWC := main.cNode.getBranches(words[0])
 		subs := make(map[subscriber]struct{})
+
 		if exact != nil {
-			s, ok := c.bLookup(i, parent, main, exact, words)
+			s, ok := c.bLookup(i, exact, words)
 			if !ok {
 				return nil, false
 			}
+
 			for _, sub := range s {
 				subs[sub] = struct{}{}
 			}
 		}
+
 		if singleWC != nil {
-			s, ok := c.bLookup(i, parent, main, singleWC, words)
+			s, ok := c.bLookup(i, singleWC, words)
 			if !ok {
 				return nil, false
 			}
+
 			for _, sub := range s {
 				subs[sub] = struct{}{}
 			}
 		}
+
 		s := make([]subscriber, len(subs))
 		i := 0
+
 		for sub := range subs {
 			s[i] = sub
 			i++
 		}
+
 		return s, true
 	case main.tNode != nil:
 		clean(parent)
@@ -372,9 +413,7 @@ func (c *csTrieMatcher) ilookup(i, parent *iNode, words []string) ([]subscriber,
 // bLookup attempts to retrieve the Subscribers from the word path along the
 // given branch. True is returned if the Subscribers were retrieved, false if
 // the operation needs to be retried.
-func (c *csTrieMatcher) bLookup(i, parent *iNode, main *mainNode, b *branch,
-	words []string) ([]subscriber, bool) {
-
+func (c *csTrieMatcher) bLookup(i *iNode, b *branch, words []string) ([]subscriber, bool) {
 	if len(words) > 1 {
 		// If more than 1 key is present in the path, the tree must be
 		// traversed deeper.
@@ -397,10 +436,12 @@ func (c *csTrieMatcher) Subscriptions() []Subscription {
 		rootPtr = (*unsafe.Pointer)(unsafe.Pointer(&c.root))
 		root    = (*iNode)(atomic.LoadPointer(rootPtr))
 	)
+
 	result, ok := c.isubscriptions(root, nil, []string{})
 	if !ok {
 		return c.Subscriptions()
 	}
+
 	return result
 }
 
@@ -409,20 +450,24 @@ func (c *csTrieMatcher) isubscriptions(i, parent *iNode, words []string) ([]Subs
 	mainPtr := (*unsafe.Pointer)(unsafe.Pointer(&i.main))
 	main := (*mainNode)(atomic.LoadPointer(mainPtr))
 	subs := []Subscription{}
+
 	switch {
 	case main.cNode != nil:
 		// Traverse all branches.
 		for word, br := range main.cNode.branches {
 			cwords := append([]string{}, words...)
 			cwords = append(cwords, word)
+
 			if br.iNode != nil {
 				// If the branch has an I-node, isubscriptions is called recursively.
 				s, ok := c.isubscriptions(br.iNode, i, cwords)
 				if !ok {
 					return nil, false
 				}
+
 				subs = append(subs, s...)
 			}
+
 			for s := range br.subs {
 				subs = append(subs, Subscription{
 					Topics:     []string{strings.Join(cwords, delimiter)},
@@ -448,6 +493,7 @@ func (c *csTrieMatcher) toContracted(cn *cNode, parent *iNode) *mainNode {
 	if c.root != parent && len(cn.branches) == 0 {
 		return &mainNode{tNode: &tNode{}}
 	}
+
 	return &mainNode{cNode: cn}
 }
 
@@ -456,6 +502,7 @@ func (c *csTrieMatcher) toContracted(cn *cNode, parent *iNode) *mainNode {
 func clean(i *iNode) {
 	mainPtr := (*unsafe.Pointer)(unsafe.Pointer(&i.main))
 	main := (*mainNode)(atomic.LoadPointer(mainPtr))
+
 	if main.cNode != nil {
 		atomic.CompareAndSwapPointer(mainPtr,
 			unsafe.Pointer(main), unsafe.Pointer(toCompressed(main.cNode)))
@@ -473,13 +520,15 @@ func cleanParent(i, parent, parentsParent *iNode, c *csTrieMatcher, word string)
 		pMainPtr = (*unsafe.Pointer)(unsafe.Pointer(&parent.main))
 		pMain    = (*mainNode)(atomic.LoadPointer(pMainPtr))
 	)
+
 	if pMain.cNode != nil {
 		if br, ok := pMain.cNode.branches[word]; ok {
 			if br.iNode != i {
 				return
 			}
+
 			if main.tNode != nil {
-				if !contract(parentsParent, parent, i, c, pMain) {
+				if !contract(parentsParent, parent, c, pMain) {
 					cleanParent(parentsParent, parent, i, c, word)
 				}
 			}
@@ -489,7 +538,7 @@ func cleanParent(i, parent, parentsParent *iNode, c *csTrieMatcher, word string)
 
 // contract performs a contraction of the parent's C-node if possible. Returns
 // true if the contraction succeeded, false if it needs to be retried.
-func contract(parentsParent, parent, i *iNode, c *csTrieMatcher, pMain *mainNode) bool {
+func contract(parentsParent, parent *iNode, c *csTrieMatcher, pMain *mainNode) bool {
 	ncn := toCompressed(pMain.cNode)
 	if len(ncn.cNode.branches) == 0 && parentsParent != nil {
 		// If the compressed C-node has no branches, it and the I-node above it
@@ -498,15 +547,18 @@ func contract(parentsParent, parent, i *iNode, c *csTrieMatcher, pMain *mainNode
 		// to point to nil.
 		ppMainPtr := (*unsafe.Pointer)(unsafe.Pointer(&parentsParent.main))
 		ppMain := (*mainNode)(atomic.LoadPointer(ppMainPtr))
+
 		for pKey, pBranch := range ppMain.cNode.branches {
 			// Find the branch pointing to the parent.
 			if pBranch.iNode == parent {
 				// Update the branch to point to nil.
 				updated := ppMain.cNode.updatedBranch(pKey, nil, pBranch)
+
 				if len(pBranch.subs) == 0 {
 					// If the branch has no subscribers, simply prune it.
 					delete(updated.branches, pKey)
 				}
+
 				// Replace the main node of the parent's parent.
 				return atomic.CompareAndSwapPointer(ppMainPtr,
 					unsafe.Pointer(ppMain), unsafe.Pointer(toCompressed(updated)))
@@ -522,6 +574,7 @@ func contract(parentsParent, parent, i *iNode, c *csTrieMatcher, pMain *mainNode
 			return false
 		}
 	}
+
 	return true
 }
 
@@ -534,6 +587,7 @@ func toCompressed(cn *cNode) *mainNode {
 			branches[key] = br
 		}
 	}
+
 	return &mainNode{cNode: &cNode{branches: branches}}
 }
 
@@ -544,10 +598,13 @@ func prunable(br *branch) bool {
 	if len(br.subs) > 0 {
 		return false
 	}
+
 	if br.iNode == nil {
 		return true
 	}
+
 	mainPtr := (*unsafe.Pointer)(unsafe.Pointer(&br.iNode.main))
 	main := (*mainNode)(atomic.LoadPointer(mainPtr))
+
 	return main.tNode != nil
 }

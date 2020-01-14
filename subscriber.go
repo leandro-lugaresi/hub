@@ -26,6 +26,7 @@ func newNonBlockingSubscriber(cap int, alerter alertFunc) *nonBlockingSubscriber
 	if cap <= 0 {
 		cap = 10
 	}
+
 	return &nonBlockingSubscriber{
 		ch:    make(chan Message, cap),
 		alert: alerter,
@@ -58,6 +59,7 @@ func newBlockingSubscriber(cap int) *blockingSubscriber {
 	if cap < 0 {
 		cap = 0
 	}
+
 	return &blockingSubscriber{
 		ch: make(chan Message, cap),
 	}
