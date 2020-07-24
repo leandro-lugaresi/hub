@@ -74,6 +74,7 @@ func (h *Hub) NonBlockingSubscribe(cap int, topics ...string) Subscription {
 // Unsubscribe remove and close the Subscription.
 func (h *Hub) Unsubscribe(sub Subscription) {
 	h.matcher.Unsubscribe(sub)
+	sub.subscriber.Close()
 }
 
 // Close will unsubscribe all the subscriptions and close them all.
