@@ -47,7 +47,7 @@ func (s *nonBlockingSubscriber) Ch() <-chan Message {
 	return s.ch
 }
 
-// Close will close the internal channel and stop receiving messages
+// Close will close the internal channel and stop receiving messages.
 func (s *nonBlockingSubscriber) Close() {
 	s.onceClose.Do(func() {
 		close(s.ch)
@@ -65,17 +65,17 @@ func newBlockingSubscriber(cap int) *blockingSubscriber {
 	}
 }
 
-// Set will send the message using the channel
+// Set will send the message using the channel.
 func (s *blockingSubscriber) Set(msg Message) {
 	s.ch <- msg
 }
 
-// Ch return the channel used by subscriptions to consume messages
+// Ch return the channel used by subscriptions to consume messages.
 func (s *blockingSubscriber) Ch() <-chan Message {
 	return s.ch
 }
 
-// Close will close the internal channel and stop receiving messages
+// Close will close the internal channel and stop receiving messages.
 func (s *blockingSubscriber) Close() {
 	s.onceClose.Do(func() {
 		close(s.ch)
