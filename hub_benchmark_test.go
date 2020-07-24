@@ -67,7 +67,6 @@ func processSubscriptionsForBench(subs []Subscription, wg *sync.WaitGroup) {
 	for _, sub := range subs {
 		go func(s Subscription) {
 			for range s.Receiver {
-
 			}
 
 			wg.Done()
