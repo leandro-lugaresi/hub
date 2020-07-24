@@ -102,7 +102,10 @@ func TestHub(t *testing.T) {
 
 func TestNonBlockingSubscriberShouldAlertIfLoseMessages(t *testing.T) {
 	h := New()
-	h.NonBlockingSubscribe(10, "a.*.c")
+	sub := h.NonBlockingSubscribe(10, "a.*.c")
+
+	defer h.Unsubscribe(sub)
+
 	subsAlert := h.Subscribe(1, AlertTopic)
 	// send messages without a working subscriber
 	for i := 0; i < 11; i++ {
@@ -141,6 +144,10 @@ func TestWith(t *testing.T) {
 
 	msg = <-subs.Receiver
 	require.Equal(t, Fields{"msg": 4, "hub": "subH2", "something": 789}, msg.Fields)
+
+	h.Unsubscribe(subs)
+	v, ok := <-subs.Receiver
+	require.Falsef(t, ok, "Unsubscribe should close the internal channel, received fields %v", v)
 }
 
 func newMessageCounter(s Subscription) *messageCounter {
