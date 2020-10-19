@@ -1,22 +1,19 @@
 package hub
 
-import (
-	"sync"
-)
-
 type (
 	alertFunc func(missed int)
 
 	nonBlockingSubscriber struct {
 		ch        chan Message
+		input chan Message
+		close chan struct{}
 		alert     alertFunc
-		onceClose sync.Once
 	}
 	// blockingSubscriber uses an channel to receive events.
 	blockingSubscriber struct {
-		ch        chan Message
-		other chan Message
-		close	 chan struct{}
+		ch    chan Message
+		input chan Message
+		close chan struct{}
 	}
 )
 
@@ -28,16 +25,32 @@ func newNonBlockingSubscriber(cap int, alerter alertFunc) *nonBlockingSubscriber
 		cap = 10
 	}
 
-	return &nonBlockingSubscriber{
-		ch:    make(chan Message, cap),
+	sub := &nonBlockingSubscriber{
+		ch:    make(chan Message, 1),
+		close:    make(chan struct{}, 1),
+		input:    make(chan Message, cap),
 		alert: alerter,
 	}
+
+	go func() {
+		for {
+			select {
+			case <-sub.close:
+				close(sub.ch)
+				return
+			case msg := <-sub.input:
+				sub.ch <- msg
+			}
+		}
+	}()
+
+	return sub
 }
 
 // Set inserts the given Event into the diode.
 func (s *nonBlockingSubscriber) Set(msg Message) {
 	select {
-	case s.ch <- msg:
+	case s.input <- msg:
 	default:
 		s.alert(1)
 	}
@@ -50,9 +63,10 @@ func (s *nonBlockingSubscriber) Ch() <-chan Message {
 
 // Close will close the internal channel and stop receiving messages.
 func (s *nonBlockingSubscriber) Close() {
-	s.onceClose.Do(func() {
-		close(s.ch)
-	})
+	select {
+	case s.close <- struct{}{}:
+	default:
+	}
 }
 
 // newBlockingSubscriber returns a blocking subscriber using channels internally.
@@ -62,8 +76,8 @@ func newBlockingSubscriber(cap int) *blockingSubscriber {
 	}
 
 	sub := &blockingSubscriber{
-		ch: make(chan Message, cap),
-		other: make(chan Message, cap),
+		ch:    make(chan Message, 1),
+		input: make(chan Message, cap),
 		close: make(chan struct{}, 1),
 	}
 
@@ -73,7 +87,7 @@ func newBlockingSubscriber(cap int) *blockingSubscriber {
 			case <-sub.close:
 				close(sub.ch)
 				return
-			case msg := <-sub.other:
+			case msg := <-sub.input:
 				sub.ch <- msg
 			}
 		}
@@ -84,7 +98,7 @@ func newBlockingSubscriber(cap int) *blockingSubscriber {
 
 // Set will send the message using the channel.
 func (s *blockingSubscriber) Set(msg Message) {
-	s.other <- msg
+	s.input <- msg
 }
 
 // Ch return the channel used by subscriptions to consume messages.
