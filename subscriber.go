@@ -15,7 +15,8 @@ type (
 	// blockingSubscriber uses an channel to receive events.
 	blockingSubscriber struct {
 		ch        chan Message
-		onceClose sync.Once
+		other chan Message
+		close	 chan struct{}
 	}
 )
 
@@ -54,20 +55,36 @@ func (s *nonBlockingSubscriber) Close() {
 	})
 }
 
-// newBlockingSubscriber returns a blocking subscriber using chanels imternally.
+// newBlockingSubscriber returns a blocking subscriber using channels internally.
 func newBlockingSubscriber(cap int) *blockingSubscriber {
 	if cap < 0 {
 		cap = 0
 	}
 
-	return &blockingSubscriber{
+	sub := &blockingSubscriber{
 		ch: make(chan Message, cap),
+		other: make(chan Message, cap),
+		close: make(chan struct{}, 1),
 	}
+
+	go func() {
+		for {
+			select {
+			case <-sub.close:
+				close(sub.ch)
+				return
+			case msg := <-sub.other:
+				sub.ch <- msg
+			}
+		}
+	}()
+
+	return sub
 }
 
 // Set will send the message using the channel.
 func (s *blockingSubscriber) Set(msg Message) {
-	s.ch <- msg
+	s.other <- msg
 }
 
 // Ch return the channel used by subscriptions to consume messages.
@@ -77,7 +94,8 @@ func (s *blockingSubscriber) Ch() <-chan Message {
 
 // Close will close the internal channel and stop receiving messages.
 func (s *blockingSubscriber) Close() {
-	s.onceClose.Do(func() {
-		close(s.ch)
-	})
+	select {
+	case s.close <- struct{}{}:
+	default:
+	}
 }
