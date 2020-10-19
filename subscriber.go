@@ -4,10 +4,10 @@ type (
 	alertFunc func(missed int)
 
 	nonBlockingSubscriber struct {
-		ch        chan Message
+		ch    chan Message
 		input chan Message
 		close chan struct{}
-		alert     alertFunc
+		alert alertFunc
 	}
 	// blockingSubscriber uses an channel to receive events.
 	blockingSubscriber struct {
@@ -27,8 +27,8 @@ func newNonBlockingSubscriber(cap int, alerter alertFunc) *nonBlockingSubscriber
 
 	sub := &nonBlockingSubscriber{
 		ch:    make(chan Message, 1),
-		close:    make(chan struct{}, 1),
-		input:    make(chan Message, cap),
+		close: make(chan struct{}, 1),
+		input: make(chan Message, cap),
 		alert: alerter,
 	}
 

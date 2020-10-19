@@ -125,16 +125,12 @@ func TestCloseBlockingSubscriber(t *testing.T) {
 	wg := sync.WaitGroup{}
 
 	go func() {
-		for {
-			_, ok := <-sub.Receiver
-			if !ok {
-				return
-			}
+		for range sub.Receiver {
 		}
 	}()
 
 	wg.Add(100)
-	for i := 0; i < 100; i ++ {
+	for i := 0; i < 100; i++ {
 		go func() {
 			defer wg.Done()
 			h.Publish(Message{Name: "topic"})
@@ -145,7 +141,6 @@ func TestCloseBlockingSubscriber(t *testing.T) {
 	wg.Wait()
 }
 
-
 func TestCloseNonBlockingSubscriber(t *testing.T) {
 	h := New()
 
@@ -153,16 +148,12 @@ func TestCloseNonBlockingSubscriber(t *testing.T) {
 	wg := sync.WaitGroup{}
 
 	go func() {
-		for {
-			_, ok := <-sub.Receiver
-			if !ok {
-				return
-			}
+		for range sub.Receiver {
 		}
 	}()
 
 	wg.Add(100)
-	for i := 0; i < 100; i ++ {
+	for i := 0; i < 100; i++ {
 		go func() {
 			defer wg.Done()
 			h.Publish(Message{Name: "topic"})
