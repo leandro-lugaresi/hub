@@ -1,6 +1,7 @@
 package hub
 
 import (
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -115,6 +116,61 @@ func TestNonBlockingSubscriberShouldAlertIfLoseMessages(t *testing.T) {
 	msg := <-subsAlert.Receiver
 	require.Equal(t, 1, msg.Fields["missed"])
 	require.Equal(t, []string{"a.*.c"}, msg.Fields["topic"])
+}
+
+func TestCloseBlockingSubscriber(t *testing.T) {
+	h := New()
+
+	sub := h.Subscribe(100, "topic")
+	wg := sync.WaitGroup{}
+
+	go func() {
+		for {
+			_, ok := <-sub.Receiver
+			if !ok {
+				return
+			}
+		}
+	}()
+
+	wg.Add(100)
+	for i := 0; i < 100; i ++ {
+		go func() {
+			defer wg.Done()
+			h.Publish(Message{Name: "topic"})
+		}()
+	}
+
+	h.Unsubscribe(sub)
+	wg.Wait()
+}
+
+
+func TestCloseNonBlockingSubscriber(t *testing.T) {
+	h := New()
+
+	sub := h.NonBlockingSubscribe(100, "topic")
+	wg := sync.WaitGroup{}
+
+	go func() {
+		for {
+			_, ok := <-sub.Receiver
+			if !ok {
+				return
+			}
+		}
+	}()
+
+	wg.Add(100)
+	for i := 0; i < 100; i ++ {
+		go func() {
+			defer wg.Done()
+			h.Publish(Message{Name: "topic"})
+		}()
+	}
+
+	h.Unsubscribe(sub)
+	wg.Wait()
 }
 
 func TestWith(t *testing.T) {
