@@ -118,50 +118,48 @@ func TestNonBlockingSubscriberShouldAlertIfLoseMessages(t *testing.T) {
 	require.Equal(t, []string{"a.*.c"}, msg.Fields["topic"])
 }
 
-func TestCloseBlockingSubscriber(t *testing.T) {
-	h := New()
-
-	sub := h.Subscribe(100, "topic")
-	wg := sync.WaitGroup{}
-
-	go func() {
-		for range sub.Receiver {
-		}
-	}()
-
-	wg.Add(100)
-	for i := 0; i < 100; i++ {
-		go func() {
-			defer wg.Done()
-			h.Publish(Message{Name: "topic"})
-		}()
+func TestUnsubscribe(t *testing.T) {
+	type testCase struct {
+		name      string
+		createSub func(h *Hub) Subscription
 	}
 
-	h.Unsubscribe(sub)
-	wg.Wait()
-}
-
-func TestCloseNonBlockingSubscriber(t *testing.T) {
-	h := New()
-
-	sub := h.NonBlockingSubscribe(100, "topic")
-	wg := sync.WaitGroup{}
-
-	go func() {
-		for range sub.Receiver {
-		}
-	}()
-
-	wg.Add(100)
-	for i := 0; i < 100; i++ {
-		go func() {
-			defer wg.Done()
-			h.Publish(Message{Name: "topic"})
-		}()
+	testCases := []testCase{
+		{
+			name:      "blocking subscriber",
+			createSub: func(h *Hub) Subscription { return h.Subscribe(10, "topic") },
+		},
+		{
+			name:      "non-blocking subscriber",
+			createSub: func(h *Hub) Subscription { return h.NonBlockingSubscribe(10, "topic") },
+		},
 	}
 
-	h.Unsubscribe(sub)
-	wg.Wait()
+	for _, tc := range testCases {
+		createSub := tc.createSub
+
+		t.Run(tc.name, func(t *testing.T) {
+			h := New()
+			sub := createSub(h)
+			wg := sync.WaitGroup{}
+
+			wg.Add(101)
+			go func() {
+				for range sub.Receiver {
+				}
+				wg.Done()
+			}()
+
+			for i := 0; i < 100; i++ {
+				go func() {
+					defer wg.Done()
+					h.Publish(Message{Name: "topic"})
+				}()
+			}
+			h.Unsubscribe(sub)
+			wg.Wait()
+		})
+	}
 }
 
 func TestWith(t *testing.T) {
