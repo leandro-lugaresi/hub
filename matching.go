@@ -29,7 +29,7 @@ type (
 	}
 
 	// subscriber is the interface used internally to send values and get the channel used by subscribers.
-	// This is used to override the behaviour of channel and support nonBlocking operations
+	// This is used to override the behavior of channel and support nonBlocking operations
 	subscriber interface {
 		// Set send the given Event to be processed by the subscriber
 		Set(Message)
