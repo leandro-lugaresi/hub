@@ -8,7 +8,9 @@ type (
 	alertFunc func(missed int)
 
 	nonBlockingSubscriber struct {
-		ch        chan Message
+		ch     chan Message
+		closed bool
+		// chMu protects ch and closed
 		chMu      sync.RWMutex
 		alert     alertFunc
 		onceClose sync.Once
@@ -42,6 +44,11 @@ func (s *nonBlockingSubscriber) Set(msg Message) {
 	s.chMu.RLock()
 	defer s.chMu.RUnlock()
 
+	if s.closed {
+		s.alert(1)
+		return
+	}
+
 	select {
 	case s.ch <- msg:
 	default:
@@ -59,6 +66,8 @@ func (s *nonBlockingSubscriber) Close() {
 	s.onceClose.Do(func() {
 		s.chMu.Lock()
 		defer s.chMu.Unlock()
+
+		s.closed = true
 
 		close(s.ch)
 	})
@@ -80,6 +89,13 @@ func newBlockingSubscriber(cap int) *blockingSubscriber {
 func (s *blockingSubscriber) Set(msg Message) {
 	s.chMu.RLock()
 	defer s.chMu.RUnlock()
+
+	// check s.ch isn't closed (we are holding the RLock, so s.ch won't be closed until the end of this function)
+	select {
+	case <-s.closeCh:
+		return
+	default:
+	}
 
 	select {
 	case s.ch <- msg:
