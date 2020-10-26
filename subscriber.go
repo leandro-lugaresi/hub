@@ -97,10 +97,7 @@ func (s *blockingSubscriber) Set(msg Message) {
 	default:
 	}
 
-	select {
-	case s.ch <- msg:
-	case <-s.closeCh:
-	}
+	s.ch <- msg
 }
 
 // Ch return the channel used by subscriptions to consume messages.
