@@ -21,7 +21,7 @@ jobs:
         run: make setup
 
       - name: Tests
-        run: make integration-ci
+        run: make test
 
       - name: Send coverage
         uses: codecov/codecov-action@v1
