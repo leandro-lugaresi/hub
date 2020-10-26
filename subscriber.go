@@ -90,14 +90,10 @@ func (s *blockingSubscriber) Set(msg Message) {
 	s.chMu.RLock()
 	defer s.chMu.RUnlock()
 
-	// check s.ch isn't closed (we are holding the RLock, so s.ch won't be closed until the end of this function)
 	select {
+	case s.ch <- msg:
 	case <-s.closeCh:
-		return
-	default:
 	}
-
-	s.ch <- msg
 }
 
 // Ch return the channel used by subscriptions to consume messages.
