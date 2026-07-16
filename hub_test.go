@@ -150,6 +150,51 @@ func TestWith(t *testing.T) {
 	require.Falsef(t, ok, "Unsubscribe should close the internal channel, received fields %v", v)
 }
 
+func TestPublishDoesNotPanicWhenNonBlockingSubscriberClosesAfterLookup(t *testing.T) {
+	testPublishDoesNotPanicWhenSubscriberClosesAfterLookup(t, func(h *Hub) Subscription {
+		return h.NonBlockingSubscribe(1, "log.*")
+	})
+}
+
+func TestPublishDoesNotPanicWhenBlockingSubscriberClosesAfterLookup(t *testing.T) {
+	testPublishDoesNotPanicWhenSubscriberClosesAfterLookup(t, func(h *Hub) Subscription {
+		return h.Subscribe(100, "log.*")
+	})
+}
+
+func testPublishDoesNotPanicWhenSubscriberClosesAfterLookup(t *testing.T, subscribe func(*Hub) Subscription) {
+	t.Helper()
+
+	for i := 0; i < 10000; i++ {
+		h := New()
+		sub := subscribe(h)
+		panicCh := make(chan interface{}, 1)
+		done := make(chan struct{})
+
+		go func() {
+			defer close(done)
+			defer func() {
+				if r := recover(); r != nil {
+					panicCh <- r
+				}
+			}()
+
+			for j := 0; j < 100; j++ {
+				h.Publish(Message{Name: "log.debug"})
+			}
+		}()
+
+		h.Unsubscribe(sub)
+		<-done
+
+		select {
+		case p := <-panicCh:
+			require.Failf(t, "Publish panicked", "iteration %d panic: %v", i, p)
+		default:
+		}
+	}
+}
+
 func newMessageCounter(s Subscription) *messageCounter {
 	ms := &messageCounter{sub: s, c: 0}
 	go func(ms *messageCounter) {

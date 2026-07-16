@@ -11,11 +11,15 @@ type (
 		ch        chan Message
 		alert     alertFunc
 		onceClose sync.Once
+		mu        sync.RWMutex
+		closed    bool
 	}
 	// blockingSubscriber uses an channel to receive events.
 	blockingSubscriber struct {
 		ch        chan Message
 		onceClose sync.Once
+		mu        sync.RWMutex
+		closed    bool
 	}
 )
 
@@ -35,6 +39,13 @@ func newNonBlockingSubscriber(cap int, alerter alertFunc) *nonBlockingSubscriber
 
 // Set inserts the given Event into the diode.
 func (s *nonBlockingSubscriber) Set(msg Message) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	if s.closed {
+		return
+	}
+
 	select {
 	case s.ch <- msg:
 	default:
@@ -50,6 +61,10 @@ func (s *nonBlockingSubscriber) Ch() <-chan Message {
 // Close will close the internal channel and stop receiving messages.
 func (s *nonBlockingSubscriber) Close() {
 	s.onceClose.Do(func() {
+		s.mu.Lock()
+		defer s.mu.Unlock()
+
+		s.closed = true
 		close(s.ch)
 	})
 }
@@ -67,6 +82,13 @@ func newBlockingSubscriber(cap int) *blockingSubscriber {
 
 // Set will send the message using the channel.
 func (s *blockingSubscriber) Set(msg Message) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	if s.closed {
+		return
+	}
+
 	s.ch <- msg
 }
 
@@ -78,6 +100,10 @@ func (s *blockingSubscriber) Ch() <-chan Message {
 // Close will close the internal channel and stop receiving messages.
 func (s *blockingSubscriber) Close() {
 	s.onceClose.Do(func() {
+		s.mu.Lock()
+		defer s.mu.Unlock()
+
+		s.closed = true
 		close(s.ch)
 	})
 }
