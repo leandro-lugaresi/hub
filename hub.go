@@ -24,6 +24,10 @@ func New() *Hub {
 
 // Publish will send an event to all the subscribers matching the event name.
 func (h *Hub) Publish(m Message) {
+	if len(h.fields) > 0 && m.Fields == nil {
+		m.Fields = Fields{}
+	}
+
 	for k, v := range h.fields {
 		m.Fields[k] = v
 	}
