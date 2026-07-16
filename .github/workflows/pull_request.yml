@@ -22,4 +22,5 @@ jobs:
         with:
           golangci_lint_version: v2.12.2
           golangci_lint_flags: --config=.golangci.yml -E revive -E errcheck
+          reporter: github-check
           filter_mode: nofilter
