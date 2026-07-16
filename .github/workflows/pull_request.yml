@@ -1,27 +1,25 @@
-name: Lint
+name: reviewdog
 
 on:
   pull_request:
 
 permissions:
+  checks: write
   contents: read
 
 jobs:
   golangci-lint:
-    name: golangci-lint
+    name: runner / golangci-lint
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
         uses: actions/checkout@v7
-
-      - name: Set up Go
-        uses: actions/setup-go@v6
         with:
-          go-version: stable
-          cache: true
+          fetch-depth: 0
 
-      - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v9
+      - name: golangci-lint
+        uses: reviewdog/action-golangci-lint@v2
         with:
-          version: v2.12
-          args: --config=.golangci.yml -E revive -E errcheck
+          go_version: stable
+          golangci_lint_version: v2.12.2
+          golangci_lint_flags: --config=.golangci.yml -E revive -E errcheck
