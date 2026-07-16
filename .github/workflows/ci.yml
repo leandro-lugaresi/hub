@@ -9,7 +9,7 @@ permissions:
 
 jobs:
   test:
-    name: Tests
+    name: Run Tests
     runs-on: ubuntu-latest
     steps:
       - name: Check out code

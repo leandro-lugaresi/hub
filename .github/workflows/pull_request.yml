@@ -23,3 +23,22 @@ jobs:
           golangci_lint_flags: --config=.golangci.yml -E revive -E errcheck
           reporter: local
           filter_mode: nofilter
+
+  errcheck:
+    name: runner / errcheck
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: errcheck
+        uses: reviewdog/action-golangci-lint@v2
+        with:
+          golangci_lint_version: v2.12.2
+          golangci_lint_flags: --enable-only=errcheck
+          tool_name: errcheck
+          level: warning
+          reporter: local
+          filter_mode: nofilter
