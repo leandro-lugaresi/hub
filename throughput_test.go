@@ -41,7 +41,7 @@ func setupTopics() {
 	for i := 0; i < numMsgs; i++ {
 		topic := topics[i%numSubs]
 		msgs[i] = Message{
-			Name: strings.Replace(topic, "*", strconv.Itoa(rand.Intn(10)), -1),
+			Name: strings.ReplaceAll(topic, "*", strconv.Itoa(rand.Intn(10))),
 		}
 	}
 }

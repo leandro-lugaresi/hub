@@ -5,7 +5,7 @@ package hub
 const AlertTopic = "hub.subscription.messageslost"
 
 type (
-	//Hub is a component that provides publish and subscribe capabilities for messages.
+	// Hub is a component that provides publish and subscribe capabilities for messages.
 	// Every message has a Name used to route them to subscribers and this can be used like RabbitMQ topics exchanges.
 	// Where every word is separated by dots `.` and you can use `*` as a wildcard.
 	Hub struct {
