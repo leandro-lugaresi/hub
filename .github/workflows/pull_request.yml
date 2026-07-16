@@ -20,6 +20,6 @@ jobs:
       - name: golangci-lint
         uses: reviewdog/action-golangci-lint@v2
         with:
-          go_version: stable
           golangci_lint_version: v2.12.2
           golangci_lint_flags: --config=.golangci.yml -E revive -E errcheck
+          filter_mode: nofilter
