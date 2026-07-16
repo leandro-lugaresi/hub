@@ -4,7 +4,6 @@ on:
   pull_request:
 
 permissions:
-  checks: write
   contents: read
 
 jobs:
@@ -22,5 +21,5 @@ jobs:
         with:
           golangci_lint_version: v2.12.2
           golangci_lint_flags: --config=.golangci.yml -E revive -E errcheck
-          reporter: github-check
+          reporter: local
           filter_mode: nofilter
