@@ -1,0 +1,6 @@
+# BEGIN cyberdeck worktrees
+!.context/
+!.context/worktrees.json
+!.context/worktrees/
+!.context/worktrees/**
+# END cyberdeck worktrees

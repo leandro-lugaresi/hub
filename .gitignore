@@ -32,3 +32,7 @@ coverage.txt
 # ignored until version 1.0
 vendor
 
+# BEGIN cyberdeck worktrees
+.context/worktrees/
+.context/worktrees.json
+# END cyberdeck worktrees
