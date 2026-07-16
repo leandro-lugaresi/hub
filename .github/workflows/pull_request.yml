@@ -1,94 +1,27 @@
-name: reviewdog
+name: Lint
 
 on:
   pull_request:
 
 permissions:
-  checks: write
   contents: read
-  pull-requests: write
 
 jobs:
   golangci-lint:
-    name: runner / golangci-lint
+    name: golangci-lint
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
         uses: actions/checkout@v7
-      - name: golangci-lint
-        uses: reviewdog/action-golangci-lint@v2
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          golangci_lint_flags: "--config=.golangci.yml -D revive -D errcheck"
-          reporter: github-pr-check
-          filter_mode: nofilter
 
-  # Use revive via golangci-lint binary with "error" level.
-  revive:
-    name: runner / revive
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v7
-      - name: revive
-        uses: reviewdog/action-golangci-lint@v2
+      - name: Set up Go
+        uses: actions/setup-go@v6
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          golangci_lint_flags: "--enable-only=revive"
-          tool_name: revive # Change reporter name.
-          level: error
-          reporter: github-pr-check
-          filter_mode: nofilter
+          go-version: stable
+          cache: true
 
-  errcheck:
-    name: runner / errcheck
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v7
-      - name: errcheck
-        uses: reviewdog/action-golangci-lint@v2
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v9
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          golangci_lint_flags: "--enable-only=errcheck"
-          tool_name: errcheck
-          level: warning
-          reporter: github-pr-check
-          filter_mode: nofilter
-
-  staticcheck:
-    name: runner / staticcheck
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: reviewdog/action-staticcheck@v1
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          reporter: github-pr-check
-          filter_mode: nofilter
-          fail_on_error: true
-
-  misspell:
-    name: runner / misspell
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: reviewdog/action-misspell@v1
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          locale: "US"
-          reporter: github-pr-check
-
-  languagetool:
-    name: runner / languagetool
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: reviewdog/action-languagetool@v1
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          reporter: github-pr-check
-          level: info
-          patterns: |
-            **/*.md
-            !**/testdata/**
+          version: v2.12
+          args: --config=.golangci.yml -E revive -E errcheck
