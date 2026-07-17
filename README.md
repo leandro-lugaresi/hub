@@ -4,7 +4,6 @@
 
 [![Release](https://img.shields.io/github/release/leandro-lugaresi/hub.svg?style=flat-square)](https://github.com/leandro-lugaresi/hub/releases/latest)
 [![Software License](https://img.shields.io/github/license/leandro-lugaresi/hub.svg?style=flat-square)](LICENSE.md)
-[![Actions Status](https://github.com/leandro-lugaresi/hub/workflows/Go/badge.svg)](https://github.com/leandro-lugaresi/hub/actions)
 [![Coverage Status](https://img.shields.io/codecov/c/github/leandro-lugaresi/hub/main.svg?style=flat-square)](https://codecov.io/gh/leandro-lugaresi/hub)
 [![Go Doc](https://img.shields.io/badge/godoc-reference-blue.svg?style=flat-square)](http://godoc.org/github.com/leandro-lugaresi/hub)
 [![Go Report Card](https://goreportcard.com/badge/github.com/leandro-lugaresi/hub?style=flat-square)](https://goreportcard.com/report/github.com/leandro-lugaresi/hub)
@@ -28,10 +27,6 @@ To install this library you can `go get` it but I encourage you to always vendor
 
 ```sh
 go get -u github.com/leandro-lugaresi/hub
-```
-
-```sh
-dep ensure --add github.com/leandro-lugaresi/hub
 ```
 
 ## Usage
