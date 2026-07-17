@@ -528,7 +528,7 @@ func cleanParent(i, parent, parentsParent *iNode, c *csTrieMatcher, word string)
 			}
 
 			if main.tNode != nil {
-				if !contract(parentsParent, parent, c, pMain) {
+				if parentsParent != nil && !contract(parentsParent, parent, c, pMain) {
 					cleanParent(parentsParent, parent, i, c, word)
 				}
 			}
