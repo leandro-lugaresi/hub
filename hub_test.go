@@ -195,6 +195,20 @@ func testPublishDoesNotPanicWhenSubscriberClosesAfterLookup(t *testing.T, subscr
 	}
 }
 
+func TestPublishInitializesNilMessageFieldsWhenHubHasFields(t *testing.T) {
+	h := New().With(Fields{"source": "test"})
+
+	sub := h.Subscribe(1, "log.*")
+	defer h.Unsubscribe(sub)
+
+	require.NotPanics(t, func() {
+		h.Publish(Message{Name: "log.debug"})
+	})
+
+	msg := <-sub.Receiver
+	require.Equal(t, Fields{"source": "test"}, msg.Fields)
+}
+
 func newMessageCounter(s Subscription) *messageCounter {
 	ms := &messageCounter{sub: s, c: 0}
 	go func(ms *messageCounter) {
